@@ -87,3 +87,18 @@ Create N nodes.
 docker run --privileged --hostname nodehost1 -p 8091 -ti --network cb-net --name nodehost1  couchbase/ubuntu --version 6.6.1 -u couchbase -p foo123! -ch clusterhost -d -os UBUNTU -r -e DOCKER
 ```
 
+## Using Docker Compose
+
+To create a cluster for testing use:
+
+```
+docker-compose -f ./compose-files/<OS SPECIFIC FILE>.yml up
+```
+
+You can then reach the containers on http://localhost:8080 (RallyNode), http://localhost:8081 (NodeOne) and http://localhost:8082 (NodeTwo)
+
+To take down the cluster:
+
+```
+docker-compose -f ./compose-files/<OS SPECIFIC FILE>.yml down
+```

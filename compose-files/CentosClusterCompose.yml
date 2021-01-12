@@ -1,0 +1,42 @@
+version: "3.9"
+services:
+  rallyhost:
+    build: ../test_scripts/centos/Dockerfile
+    image: couchbase/centos
+    hostname: 'clusterhost'
+    tty: true
+    ports: 
+      - "8080:8091"
+    networks:
+      - cb-net-centos
+    container_name: centos-clusterhost
+    command: --version 6.6.1 -u couchbase -p foo123! -ch clusterhost -d -os CENTOS -r
+    privileged: true
+  nodeone:
+    image: couchbase/centos
+    hostname: 'node_one'
+    tty: true
+    depends_on:
+      - rallyhost
+    networks:
+      - cb-net-centos
+    ports: 
+      - "8081:8091"
+    container_name: centos-node-one
+    command: --version 6.6.1 -u couchbase -p foo123! -ch clusterhost -d -os CENTOS -r
+    privileged: true
+  nodetwo:
+    image: couchbase/centos
+    hostname: 'node_two'
+    tty: true
+    depends_on:
+      - rallyhost
+    networks:
+      - cb-net-centos
+    ports: 
+      - "8082:8091"
+    container_name: centos-node-two
+    command: --version 6.6.1 -u couchbase -p foo123! -ch clusterhost -d -os CENTOS -r
+    privileged: true
+networks:
+  cb-net-centos:
