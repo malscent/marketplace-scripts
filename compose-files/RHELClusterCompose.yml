@@ -1,0 +1,42 @@
+version: "3.9"
+services:
+  rallyhost:
+    build: ../test_scripts/redhat/Dockerfile
+    image: couchbase/redhat
+    hostname: 'clusterhost'
+    tty: true
+    ports: 
+      - "8080:8091"
+    networks:
+      - cb-net-redhat
+    container_name: redhat-clusterhost
+    command: --version 6.6.1 -u couchbase -p foo123! -ch clusterhost -d -os RHEL -r
+    privileged: true
+  nodeone:
+    image: couchbase/redhat
+    hostname: 'node_one'
+    tty: true
+    depends_on:
+      - rallyhost
+    networks:
+      - cb-net-redhat
+    ports: 
+      - "8081:8091"
+    container_name: redhat-node-one
+    command: --version 6.6.1 -u couchbase -p foo123! -ch clusterhost -d -os RHEL -r
+    privileged: true
+  nodetwo:
+    image: couchbase/redhat
+    hostname: 'node_two'
+    tty: true
+    depends_on:
+      - rallyhost
+    networks:
+      - cb-net-redhat
+    ports: 
+      - "8082:8091"
+    container_name: redhat-node-two
+    command: --version 6.6.1 -u couchbase -p foo123! -ch clusterhost -d -os RHEL -r
+    privileged: true
+networks:
+  cb-net-redhat:
