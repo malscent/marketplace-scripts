@@ -27,7 +27,7 @@ HELP=0
 export DEBUG=0
 VERSION="6.6.1"
 OS="UBUNTU"
-AVAILABLE_OS_VALUES=("UBUNTU" "MACOS" "OSX" "RHEL" "CENTOS" "DEBIAN")
+AVAILABLE_OS_VALUES=("UBUNTU" "RHEL" "CENTOS" "DEBIAN")
 ENV="OTHER"
 AVAILABLE_ENV_VALUES=("AZURE" "AWS" "GCP" "DOCKER" "KUBERNETES" "OTHER")
 DEFAULT_USERNAME="couchbase"
@@ -149,12 +149,37 @@ if [[ "$OS" == "UBUNTU" ]]; then
     source "${SCRIPT_SOURCE}installers/ubuntu_installer.sh"
 fi
 
+if [[ "$OS" == "CENTOS" ]]; then
+    # shellcheck disable=SC1091
+    # shellcheck source=installers/ubuntu_installer.sh
+    source "${SCRIPT_SOURCE}installers/centos_installer.sh"
+fi
+
+if [[ "$OS" == "ALPINE" ]]; then
+    # shellcheck disable=SC1091
+    # shellcheck source=installers/ubuntu_installer.sh
+    source "${SCRIPT_SOURCE}installers/alpine_installer.sh"
+fi
+
+if [[ "$OS" == "RHEL" ]]; then
+    # shellcheck disable=SC1091
+    # shellcheck source=installers/ubuntu_installer.sh
+    source "${SCRIPT_SOURCE}installers/redhat_installer.sh"
+fi
+
+if [[ "$OS" == "DEBIAN" ]]; then
+    # shellcheck disable=SC1091
+    # shellcheck source=installers/ubuntu_installer.sh
+    source "${SCRIPT_SOURCE}installers/debian_installer.sh"
+fi
+
+
 #installing prerequisites from installer
 __install_prerequisites
 
 #Getting information to determine whether this is the cluster host or not.  
 LOCAL_IP=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
-HOST=$(hostname)
+HOST=$(hostname) || hostnamectl
 __log_debug "Hostname:  ${HOST}"
 __log_debug "Local IP: ${LOCAL_IP}"
 DO_CLUSTER=0
@@ -193,16 +218,16 @@ __log_debug "CLI Installed to:  ${CLI_INSTALL_LOCATION}"
 
 __log_debug "Prior to initialization.  Let's hit the UI and make sure we get a response"
 
-LOCAL_HOST_GET=$(wget --server-response --spider "http://localhost:8091/ui/index.html" 2>&1 | awk 'NR==6{print $2}')
+LOCAL_HOST_GET=$(wget --server-response --spider "http://localhost:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
 __log_debug "LOCALHOST http://localhost:8091/ui/index.html: $LOCAL_HOST_GET"
 
-LOOPBACK_GET=$(wget  --server-response --spider "http://127.0.0.1:8091/ui/index.html" 2>&1 | awk 'NR==5{print $2}')
+LOOPBACK_GET=$(wget  --server-response --spider "http://127.0.0.1:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
 __log_debug "LOOPBACK http://127.0.0.1:8091/ui/index.html: $LOOPBACK_GET"
 
-HOSTNAME_GET=$(wget  --server-response --spider "http://${HOST}:8091/ui/index.html" 2>&1 | awk 'NR==5{print $2}')
+HOSTNAME_GET=$(wget  --server-response --spider "http://${HOST}:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
 __log_debug "HOST http://${HOST}:8091/ui/index.html:  $HOSTNAME_GET"
 
-IP_GET=$(wget --server-response --spider "http://${LOCAL_IP}:8091/ui/index.html" 2>&1 | awk 'NR==5{print $2}')
+IP_GET=$(wget --server-response --spider "http://${LOCAL_IP}:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
 __log_debug "IP http://${LOCAL_IP}:8091/ui/index.html: $IP_GET"
 
 cd "${CLI_INSTALL_LOCATION}"
@@ -221,8 +246,8 @@ __log_debug "node-init result: \'$resval\'"
 if [[ $DO_CLUSTER == 1 ]]
 then
   totalRAM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-  dataRAM=$((50 * $totalRAM / 100000))
-  indexRAM=$((15 * $totalRAM / 100000))
+  dataRAM=$((50 * totalRAM / 100000))
+  indexRAM=$((15 * totalRAM / 100000))
 
   __log_debug "Running couchbase-cli cluster-init"
   result=$(./couchbase-cli cluster-init \

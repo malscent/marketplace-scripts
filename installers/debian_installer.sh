@@ -1,19 +1,5 @@
 #!/usr/bin/env bash
 
-adjustTCPKeepalive ()
-{
-# Azure public IPs have some odd keep alive behaviour
-# A summary is available here https://docs.mongodb.org/ecosystem/platforms/windows-azure/
-    
-    __log_debug "Setting TCP keepalive..."
-    sysctl -w net.ipv4.tcp_keepalive_time=120 -q
-
-    __log_debug "Setting TCP keepalive permanently..."
-    echo "net.ipv4.tcp_keepalive_time = 120
-    " >> /etc/sysctl.conf
-    __log_debug "TCP keepalive setting changed."
-}
-
 formatDataDisk ()
 {
     # This script formats and mounts the drive on lun0 as /datadisk
@@ -49,6 +35,20 @@ formatDataDisk ()
     chgrp couchbase $MOUNTPOINT
 }
 
+adjustTCPKeepalive ()
+{
+# Azure public IPs have some odd keep alive behaviour
+# A summary is available here https://docs.mongodb.org/ecosystem/platforms/windows-azure/
+    
+    __log_debug "Setting TCP keepalive..."
+    #sysctl -w net.ipv4.tcp_keepalive_time=120 -q
+
+    __log_debug "Setting TCP keepalive permanently..."
+    echo "net.ipv4.tcp_keepalive_time = 120
+    " >> /etc/sysctl.conf
+    __log_debug "TCP keepalive setting changed."
+}
+
 turnOffTransparentHugepages ()
 {
     __log_debug "Disabling Transparent Hugepages"
@@ -59,33 +59,37 @@ turnOffTransparentHugepages ()
     __log_debug "Transparent Hugepages have been disabled."
 }
 
-setSwappinessToZero ()
+setSwappiness()
 {
+    KERNAL_VERSION=$(uname -r)
+    RET=$(__compareVersions "$KERNAL_VERSION" "3.5.0")
+    SWAPPINESS=0
+    if [[ "$RET" == "1" ]]; then
+        SWAPPINESS=1
+    fi
     __log_debug "Setting Swappiness to Zero"
-    sysctl vm.swappiness=0 -q
     echo "
     # Required for Couchbase
-    vm.swappiness = 0
+    vm.swappiness = ${SWAPPINESS}
     " >> /etc/sysctl.conf
     __log_debug "Swappiness set to Zero"
 }
 
-UBUNTU_OS_SUPPORTED_VERSIONS=("14.04" "16.04" "18.04" "20.04")
-UBUNTU_14_SUPPORTED_VERSIONS=("5.0.1" "5.1.0" "5.1.1" "5.1.2" "5.1.3" "5.5.0" "5.5.1" "5.5.2" "5.5.3" "5.5.4" "5.5.5" "5.5.6" "6.0.0" "6.0.1")
-UBUNTU_16_SUPPORTED_VERSIONS=("5.0.1" "5.1.0" "5.1.1" "5.1.2" "5.1.3" "5.5.0" "5.5.1" "5.5.2" "5.5.3" "5.5.4" "5.5.5" "5.5.6" "6.0.0" "6.0.1" "6.0.2" "6.0.3" "6.0.4" "6.5.0" "6.5.1" "6.6.0" "6.6.1")
-UBUNTU_18_SUPPORTED_VERSIONS=("6.0.1" "6.0.2" "6.0.3" "6.0.4" "6.5.0" "6.5.1" "6.6.0" "6.6.1" "7.0.0")
-UBUNTU_20_SUPPORTED_VERSIONS=("7.0.0")
-OS_VERSION=$(awk 'NR==1{print $2}' /etc/issue | cut -c-5)
+DEBIAN_OS_SUPPORTED_VERSIONS=("10" "9" "8")
+DEBIAN_10_SUPPORTED_VERSIONS=("6.5.0" "6.5.1" "6.6.0" "6.6.1")
+DEBIAN_9_SUPPORTED_VERSIONS=("5.1.0" "5.1.1" "5.1.2" "5.1.3" "5.5.0" "5.5.1" "5.5.2" "5.5.3" "5.5.4" "5.5.5" "5.5.6" "6.0.0" "6.0.1" "6.0.2" "6.0.3" "6.0.4" "6.5.0" "6.5.1" "6.6.0" "6.6.1")
+DEBIAN_8_SUPPORTED_VERSIONS=("5.0.1" "5.1.0" "5.1.1" "5.1.2" "5.1.3" "5.5.0" "5.5.1" "5.5.2" "5.5.3" "5.5.4" "5.5.5" "5.5.6" "6.0.0" "6.0.1" "6.0.2" "6.0.3" "6.0.4" "6.5.0" "6.5.1" "6.6.0" "6.6.1")
+OS_VERSION=$(awk 'NR==1{print $3}' /etc/issue)
 
 # Prerequisite installation
 # This is called by the main.sh to set up all necessary libaries
 function __install_prerequisites() {
     __log_debug "Checking OS compatability"
     __log_debug "OS version is: ${OS_VERSION}"
-    __log_debug "Supported Versions are: ${UBUNTU_OS_SUPPORTED_VERSIONS[*]}"
-    supported=$(__elementIn "$OS_VERSION" "${UBUNTU_OS_SUPPORTED_VERSIONS[@]}")
+    __log_debug "Supported Versions are: ${DEBIAN_OS_SUPPORTED_VERSIONS[*]}"
+    supported=$(__elementIn "$OS_VERSION" "${DEBIAN_OS_SUPPORTED_VERSIONS[@]}")
     if [[ "$supported" == 1 ]]; then
-        __log_error "This version of UBUNTU is not supported by Couchbase Server Enterprise Edition."
+        __log_error "This version of DEBIAN is not supported by Couchbase Server Enterprise Edition."
         exit 1
     fi
     __log_info "Installing prerequisites..."
@@ -108,32 +112,31 @@ function __install_prerequisites() {
     __log_debug "Installing wget"
     apt-get -y install wget -qq > /dev/null
     __log_debug "wget install complete."
+    __log_debug "Installing lsb-base"
+    apt-get -y install lsb-base -qq > /dev/null
+    __log_debug "lsb_base install complete."
 }
 
 # Main Installer function.  This actually performs the download of the binaries
 # This is called by main.sh for installation.
 function __install_couchbase() {
-
     version=$1
-    if [[ "$OS_VERSION" == "14.04" ]]; then
-        version=$(__findClosestVersion "$1" "${UBUNTU_14_SUPPORTED_VERSIONS[@]}")
+    if [[ "$OS_VERSION" == "8" ]]; then
+        version=$(__findClosestVersion "$1" "${DEBIAN_8_SUPPORTED_VERSIONS[@]}")
     fi
-    if [[ "$OS_VERSION" == "16.04" ]]; then
-        version=$(__findClosestVersion "$1" "${UBUNTU_16_SUPPORTED_VERSIONS[@]}")
+    if [[ "$OS_VERSION" == "9" ]]; then
+        version=$(__findClosestVersion "$1" "${DEBIAN_9_SUPPORTED_VERSIONS[@]}")
     fi
-    if [[ "$OS_VERSION" == "18.04" ]]; then
-        version=$(__findClosestVersion "$1" "${UBUNTU_18_SUPPORTED_VERSIONS[@]}")
-    fi
-    if [[ "$OS_VERSION" == "20.04" ]]; then
-        version=$(__findClosestVersion "$1" "${UBUNTU_20_SUPPORTED_VERSIONS[@]}")
+    if [[ "$OS_VERSION" == "10" ]]; then
+        version=$(__findClosestVersion "$1" "${DEBIAN_10_SUPPORTED_VERSIONS[@]}")
     fi
     tmp=$2
     __log_info "Installing Couchbase Server v${version}..."
     __log_debug "Downloading installer to: ${tmp}"
-    wget -O "${tmp}/couchbase-server-enterprise_${version}-ubuntu${OS_VERSION}_amd64.deb" "http://packages.couchbase.com/releases/${version}/couchbase-server-enterprise_${version}-ubuntu${OS_VERSION}_amd64.deb" -q
+    wget -O "${tmp}/couchbase-server-enterprise_${version}-debian${OS_VERSION}_amd64.deb" "http://packages.couchbase.com/releases/${version}/couchbase-server-enterprise_${version}-debian${OS_VERSION}_amd64.deb" -q
     __log_debug "Download Complete.  Beginning Unpacking"
-    if ! dpkg -i "${tmp}/couchbase-server-enterprise_${version}-ubuntu${OS_VERSION}_amd64.deb" > /dev/null; then
-        __log_error "Error while installing ${tmp}/couchbase-server-enterprise_${version}-ubuntu${OS_VERSION}_amd64.deb"
+    if ! dpkg -i "${tmp}/couchbase-server-enterprise_${version}-debian${OS_VERSION}_amd64.deb" > /dev/null; then
+        __log_error "Error while installing ${tmp}/couchbase-server-enterprise_${version}-debian${OS_VERSION}_amd64.deb"
         exit 1
     fi
     __log_debug "Unpacking complete.  Beginning Installation"
@@ -142,16 +145,19 @@ function __install_couchbase() {
 
     #return the location of where the couchbase cli is installed
     export CLI_INSTALL_LOCATION="/opt/couchbase/bin"
+
 }
 
 # Post install this method is called to make changes to the system based on the environment being installed to
 #  env can be AZURE, AWS, GCP, DOCKER, KUBERNETES, OTHER
 function __configure_environment() {
+    __log_debug "Configuring Environment"
     env=$1
+    __log_debug "Setting up for environment: ${env}"
     if [[ "$env" == "AZURE" ]]; then
         formatDataDisk
     fi
     turnOffTransparentHugepages
-    setSwappinessToZero
+    setSwappiness
     adjustTCPKeepalive
 }

@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-columns="$(tput cols)"
+terminal_size=$(stty size)
+columns="${terminal_size#* }"
 
 function print_line()
 {
     size=${#1}
-    padding=$(($(($columns - $size))/2))
+    padding=$(($((columns - size))/2))
     printf '%*s' "${COLUMNS:-$padding}" ''
     printf '%s' "$1"
     printf '%*s\n' "${COLUMNS:-$padding}" ''

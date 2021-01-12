@@ -78,7 +78,7 @@ docker network create --driver bridge cb-net
 ### Clusterhost
 Create a clusterhost 
 ```
-docker run --privileged --hostname clusterhost --expose=8091 -ti --network cb-net --name clusterhost  couchbase/ubuntu --version 6.6.1 -u couchbase -p foo123! -ch clusterhost -d -os UBUNTU -r
+docker run --privileged --hostname clusterhost --expose=8091 -ti --rm --network cb-net --name clusterhost  couchbase/ubuntu --version 6.6.1 -u couchbase -p foo123! -ch clusterhost -d -os UBUNTU -r
 ```
 
 ### Node
