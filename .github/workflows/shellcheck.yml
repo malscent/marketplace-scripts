@@ -30,4 +30,5 @@ jobs:
         uses: ludeeus/action-shellcheck@1.0.0
         with:
           check_together: 'yes'
+          ignore: test_scripts 
         
