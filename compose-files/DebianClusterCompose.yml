@@ -1,7 +1,9 @@
 version: "3.9"
 services:
   rallyhost:
-    build: ../test_scripts/debian/Dockerfile
+    build:
+      context: ../
+      dockerfile: ./test_scripts/debian/Dockerfile
     image: couchbase/debian
     hostname: 'clusterhost'
     tty: true

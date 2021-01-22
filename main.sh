@@ -5,16 +5,16 @@ set -o nounset
 set -o pipefail
 
 # get script directory to reference
-SCRIPT_SOURCE=${BASH_SOURCE[0]/%main.sh/}
+# SCRIPT_SOURCE=${BASH_SOURCE[0]/%main.sh/}
 # shellcheck disable=SC1091
 # shellcheck source=common/loggers.sh
-source "${SCRIPT_SOURCE}common/loggers.sh"
+source './common/loggers.sh'
 # shellcheck disable=SC1091
 # shellcheck source=common/utils.sh
-source "${SCRIPT_SOURCE}common/utils.sh"
+source './common/utils.sh'
 # shellcheck disable=SC1091
 # shellcheck source=common/help.sh
-source "${SCRIPT_SOURCE}common/help.sh"
+source './common/help.sh'
 
 # Print header
 print_header
@@ -35,6 +35,7 @@ DEFAULT_PASSWORD=$(__generate_random_string)
 CB_USERNAME=$DEFAULT_USERNAME
 CB_PASSWORD=$DEFAULT_PASSWORD
 DAEMON=0
+STARTUP=0
 
 # Here we're setting up a handler for unexpected errors during operations
 function handle_exit() {
@@ -107,6 +108,10 @@ case $key in
     -r|--run-continuously)
     DAEMON=1
     shift
+    ;;    
+    -s|--startup)
+    STARTUP=1
+    shift
     ;;
     -e|--environment)
       if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
@@ -146,33 +151,34 @@ __log_info "Configuring for Environment: ${ENV}"
 if [[ "$OS" == "UBUNTU" ]]; then
     # shellcheck disable=SC1091
     # shellcheck source=installers/ubuntu_installer.sh
-    source "${SCRIPT_SOURCE}installers/ubuntu_installer.sh"
+    source './installers/ubuntu_installer.sh'
 fi
 
 if [[ "$OS" == "CENTOS" ]]; then
     # shellcheck disable=SC1091
     # shellcheck source=installers/ubuntu_installer.sh
-    source "${SCRIPT_SOURCE}installers/centos_installer.sh"
-fi
-
-if [[ "$OS" == "ALPINE" ]]; then
-    # shellcheck disable=SC1091
-    # shellcheck source=installers/ubuntu_installer.sh
-    source "${SCRIPT_SOURCE}installers/alpine_installer.sh"
+    source './installers/centos_installer.sh'
 fi
 
 if [[ "$OS" == "RHEL" ]]; then
     # shellcheck disable=SC1091
     # shellcheck source=installers/ubuntu_installer.sh
-    source "${SCRIPT_SOURCE}installers/redhat_installer.sh"
+    source './installers/redhat_installer.sh'
 fi
 
 if [[ "$OS" == "DEBIAN" ]]; then
     # shellcheck disable=SC1091
     # shellcheck source=installers/ubuntu_installer.sh
-    source "${SCRIPT_SOURCE}installers/debian_installer.sh"
+    source './installers/debian_installer.sh'
 fi
 
+if [[ "$STARTUP" == "1" ]]; then
+  __log_info "Checking for Couchbase Server Install"
+  if [ -d "/opt/couchbase" ]; then
+    __log_info "Couchbase is already installed.  Exiting"
+    exit;
+  fi
+fi
 
 #installing prerequisites from installer
 __install_prerequisites
@@ -239,7 +245,7 @@ resval=$(./couchbase-cli node-init \
   --node-init-data-path=/datadisk/data \
   --node-init-index-path=/datadisk/index \
   --username="$CB_USERNAME" \
-  --password="$CB_PASSWORD")
+  --password="$CB_PASSWORD") || __log_error "Error during Node Initialization"
 __log_debug "node-init result: \'$resval\'"
 
 
@@ -256,7 +262,7 @@ then
     --cluster-index-ramsize=$indexRAM \
     --cluster-username="$CB_USERNAME" \
     --cluster-password="$CB_PASSWORD" \
-    --services=data,index,query,fts)
+    --services=data,index,query,fts) || __log_error "Error during Cluster Initialization"
 __log_debug "cluster-init result: \'$result\'"
 else
   __log_debug "Running couchbase-cli server-add"
@@ -273,7 +279,7 @@ else
       --server-add="$LOCAL_IP" \
       --server-add-username="$CB_USERNAME" \
       --server-add-password="$CB_PASSWORD" \
-      --services=data,index,query,fts)
+      --services=data,index,query,fts) || __log_error "Error during Server Add"
     set -e
     __log_debug "server-add output \'$output\'"
     sleep 10
@@ -288,7 +294,7 @@ else
     output=$(./couchbase-cli rebalance \
       --cluster="$CLUSTER_HOST" \
       --username="$CB_USERNAME" \
-      --password="$CB_PASSWORD")
+      --password="$CB_PASSWORD") || __log_error "Error during Rebalance"
     set -e
     __log_debug "rebalance output \'$output\'"
     sleep 10

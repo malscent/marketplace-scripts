@@ -1,7 +1,9 @@
 version: "3.9"
 services:
   rallyhost:
-    build: ../test_scripts/centos/Dockerfile
+    build:
+      context: ../
+      dockerfile: ./test_scripts/centos/Dockerfile
     image: couchbase/centos
     hostname: 'clusterhost'
     tty: true

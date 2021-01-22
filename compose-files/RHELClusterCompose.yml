@@ -1,7 +1,9 @@
 version: "3.9"
 services:
   rallyhost:
-    build: ../test_scripts/redhat/Dockerfile
+    build:
+      context: ../
+      dockerfile: ./test_scripts/redhat/Dockerfile
     image: couchbase/redhat
     hostname: 'clusterhost'
     tty: true

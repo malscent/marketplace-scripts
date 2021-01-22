@@ -1,0 +1,54 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Build/Install on Ubuntu
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  UbuntuStack:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-20.04
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checks Out Code
+        uses: actions/checkout@v2
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '^1.13.1'
+      # Runs a single command using the runners shell
+      - name: Install Bash Bundler
+        run: go get github.com/malscent/bash_bundler
+      - name: Create Build Directory
+        run: mkdir ${GITHUB_WORKSPACE}/build
+      # Runs a set of commands using the runners shell
+      - name: Build non-minified script
+        run: $HOME/go/bin/bash_bundler bundle -e ${GITHUB_WORKSPACE}/main.sh -o ${GITHUB_WORKSPACE}/build/couchbase_installer.sh
+      - name: Build minified script
+        run: $HOME/go/bin/bash_bundler bundle -e ${GITHUB_WORKSPACE}/main.sh -o ${GITHUB_WORKSPACE}/build/couchbase_installer_min.sh --minify
+      - name: Change to Github Workspace Directory
+        run: cd ${GITHUB_WORKSPACE}
+      - name: pwd
+        run: pwd
+      - name: Stand Up Ubuntu Stack
+        run: docker-compose -f ./compose-files/UbuntuClusterCompose.yml up -d --build
+      - name: Docker containers running?
+        run: docker ps
+      - name: Test
+        run: docker run --network compose-files_cb-net-ubuntu appropriate/curl --retry 10  --retry-connrefused http://ubuntu-clusterhost:8091/
+      - name: Teardown
+        run: docker-compose -f ./compose-files/UbuntuClusterCompose.yml down

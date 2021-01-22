@@ -55,9 +55,15 @@ These scripts are intended for usage to install and cluster multiple VM's, conta
 
 **Options**:  ```AZURE, AWS, GCP, DOCKER, KUBERNETES, OTHER```
 
+### ```-s|--startup```
+
+**Usage**:  ```./main.sh -s```
+
+**Purpose**: Specifies the install script to run in a mode that is intended to run on every boot of the server
+
 ### ```-h|--help```
 
-**Usage**: ```./main.sh -h```
+**Usage**: ```./main.sh -```
 
 **Purpose**:  Prints help regarding the parameters to pass to this script
 

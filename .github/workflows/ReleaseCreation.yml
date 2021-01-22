@@ -1,0 +1,73 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Build
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    tags:
+    - 'v*'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      - name: Build Project
+        uses: actions/setup-go@v2
+        with:
+          go-version: '^1.13.1'
+      # Runs a single command using the runners shell
+      - name: Install Bash Bundler
+        run: go get github.com/malscent/bash_bundler
+      - name: Create Build Directory
+        run: mkdir ${GITHUB_WORKSPACE}/build
+      - name: Create Output file
+        run: touch ${GITHUB_WORKSPACE}/build/couchbase_installer.sh
+      # Runs a set of commands using the runners shell
+      - name: Build non-minified script
+        run: $HOME/go/bin/bash_bundler bundle -e ${GITHUB_WORKSPACE}/main.sh -o ${GITHUB_WORKSPACE}/build/couchbase_installer.sh
+      - name: Build minified script
+        run: $HOME/go/bin/bash_bundler bundle -e ${GITHUB_WORKSPACE}/main.sh -o ${GITHUB_WORKSPACE}/build/couchbase_installer_min.sh --minify
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with: 
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Upload Standard Asset
+        id: upload-standard-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with: 
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/couchbase_installer.sh
+          asset_name: couchbase_installer.sh
+          asset_content_type: application/text
+      - name: Upload Minified Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with: 
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/couchbase_installer_min.sh
+          asset_name: couchbase_installer_min.sh
+          asset_content_type: application/text
+        
