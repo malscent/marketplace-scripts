@@ -50,7 +50,7 @@ services:
       - cb-net-ubuntu
     ports: 
       - "8083:4985"
-      - "8084:4984"
+      - "8090:4984"
     container_name: gateway
     command: --version 2.8.0 -u couchbase -p foo123! -ch ubuntu-clusterhost -d -os UBUNTU -g -r
     privileged: true  
