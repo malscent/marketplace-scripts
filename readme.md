@@ -41,6 +41,12 @@ These scripts are intended for usage to install and cluster multiple VM's, conta
 
 **Purpose**: Specifies that the script should be executed in debug mode, increasing output information to assist in debugging the script.
 
+### ```-g|--sync-gateway```
+
+**Usage**: ```./main.sh -g```
+
+**Purpose**: Specifies that the script should install the Couchbase Sync Gateway instead of Couchbase Server
+
 ### ```-r|--run-continuously```
 
 **Usage**: ```./main.sh -r```

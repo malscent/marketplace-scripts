@@ -68,6 +68,8 @@ esac
 
 CENTOS_OS_SUPPORTED_VERSIONS=("8" "7")
 CENTOS_SUPPORTED_VERSIONS=("6.5.0" "6.5.1" "6.6.0" "6.6.1")
+CENTOS_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0")
+
 OS_VERSION=$(awk '/^VERSION_ID=/{print $1}' /etc/os-release | awk -F"=" '{print $2}' | sed -e 's/^"//' -e 's/"$//')
 # Prerequisite installation
 # This is called by the main.sh to set up all necessary libaries
@@ -100,6 +102,47 @@ function __install_couchbase() {
     rpm -i "${tmp}/couchbase-release-1.0-x86_64.rpm"
     yum install "couchbase-server-${version}" -y -q
     export CLI_INSTALL_LOCATION="/opt/couchbase/bin"
+}
+
+# Sync Gateway Installer,  For when the script is to be used to install sync gateway and not CBS
+function __install_syncgateway() {
+    version=$1
+    tmp=$2
+    version=$(__findClosestVersion "$1" "${CENTOS_SUPPORTED_SYNC_GATEWAY_VERSIONS[@]}")
+    echo "Setting up sync gateway user"
+    useradd sync_gateway
+    echo "Creating sync_gateway home directory"
+    mkdir -p /home/sync_gateway/
+    chown sync_gateway:sync_gateway /home/sync_gateway
+
+    __log_info "Installing Couchbase Sync Gateway Enterprise Edition v${version}"
+    __log_debug "Downloading installer to: ${tmp}"
+    wget -O "${tmp}/couchbase-sync-gateway-enterprise_${version}_x86_64.rpm" https://packages.couchbase.com/releases/couchbase-sync-gateway/${version}/couchbase-sync-gateway-enterprise_${version}_x86_64.rpm --quiet
+    __log_debug "Download complete. Beginning Unpacking"
+    if ! rpm -i "${tmp}/couchbase-sync-gateway-enterprise_${version}_x86_64.rpm" > /dev/null; then
+        __log_error "Error while installing ${tmp}/couchbase-sync-gateway-enterprise_${version}_x86_64.rpm"
+        exit 1
+    fi
+
+    __log_info "Installation Complete. Configuring Couchbase Sync Gateway"
+
+    file="/home/sync_gateway/sync_gateway.json"
+    echo '
+    {
+    "interface": "0.0.0.0:4984",
+    "adminInterface": "0.0.0.0:4985",
+    "log": ["*"]
+    }
+    ' > ${file}
+    chmod 755 ${file}
+    chown sync_gateway ${file}
+    chgrp sync_gateway ${file}
+
+    # Need to restart to load the changes
+    #systemctl stop sync_gateway
+    #systemctl start sync_gateway
+    service sync_gateway stop
+    service sync_gateway start
 }
 
 # Post install this method is called to make changes to the system based on the environment being installed to

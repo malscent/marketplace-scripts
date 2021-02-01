@@ -115,11 +115,29 @@ UBUNTU_14_SUPPORTED_VERSIONS=("5.0.1" "5.1.0" "5.1.1" "5.1.2" "5.1.3" "5.5.0" "5
 UBUNTU_16_SUPPORTED_VERSIONS=("5.0.1" "5.1.0" "5.1.1" "5.1.2" "5.1.3" "5.5.0" "5.5.1" "5.5.2" "5.5.3" "5.5.4" "5.5.5" "5.5.6" "6.0.0" "6.0.1" "6.0.2" "6.0.3" "6.0.4" "6.5.0" "6.5.1" "6.6.0" "6.6.1")
 UBUNTU_18_SUPPORTED_VERSIONS=("6.0.1" "6.0.2" "6.0.3" "6.0.4" "6.5.0" "6.5.1" "6.6.0" "6.6.1" "7.0.0")
 UBUNTU_20_SUPPORTED_VERSIONS=("7.0.0")
+UBUNTU_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0")
 OS_VERSION=$(awk 'NR==1{print $2}' /etc/issue | cut -c-5)
 
 # Prerequisite installation
 # This is called by the main.sh to set up all necessary libaries
 function __install_prerequisites() {
+    # Here we are unlocking dpkg should it be locked by another process
+    # FILE="/var/lib/dpkg/lock-frontend"
+    # DB="/var/lib/dpkg/lock"
+    # if [[ -f "$FILE" ]]; then
+    # PID=$(lsof -t $FILE)
+    # echo "lock-frontend locked by $PID"
+    # echo "Killing $PID"
+    # kill -9 "${PID##p}"
+    # echo "$PID Killed"
+    # rm $FILE
+    # PID=$(lsof -t $DB)
+    # echo "DB locked by $PID"
+    # kill -9 "${PID##p}"
+    # rm $DB
+    # dpkg --configure -a
+    # fi
+
     __log_debug "Checking OS compatability"
     __log_debug "OS version is: ${OS_VERSION}"
     __log_debug "Supported Versions are: ${UBUNTU_OS_SUPPORTED_VERSIONS[*]}"
@@ -148,12 +166,14 @@ function __install_prerequisites() {
     __log_debug "Installing wget"
     apt-get -y install wget -qq > /dev/null
     __log_debug "wget install complete."
+    __log_debug "Installing lsb_release"
+    apt-get -y install lsb-release -qq > /dev/null
+    __log_debug "lsb_release install complete."
 }
 
 # Main Installer function.  This actually performs the download of the binaries
 # This is called by main.sh for installation.
 function __install_couchbase() {
-
     version=$1
     if [[ "$OS_VERSION" == "14.04" ]]; then
         version=$(__findClosestVersion "$1" "${UBUNTU_14_SUPPORTED_VERSIONS[@]}")
@@ -182,6 +202,47 @@ function __install_couchbase() {
 
     #return the location of where the couchbase cli is installed
     export CLI_INSTALL_LOCATION="/opt/couchbase/bin"
+}
+
+# Sync Gateway Installer,  For when the script is to be used to install sync gateway and not CBS
+function __install_syncgateway() {
+    version=$1
+    tmp=$2
+    version=$(__findClosestVersion "$1" "${UBUNTU_SUPPORTED_SYNC_GATEWAY_VERSIONS[@]}")
+    __log_debug "Setting up sync gateway user"
+    useradd sync_gateway
+    __log_debug "Creating sync_gateway home directory"
+    mkdir -p /home/sync_gateway/
+    chown sync_gateway:sync_gateway /home/sync_gateway
+
+    __log_info "Installing Couchbase Sync Gateway Enterprise Edition v${version}"
+    __log_debug "Downloading installer to: ${tmp}"
+    wget -O "${tmp}/couchbase-sync-gateway-enterprise_${version}_x86_64.deb" https://packages.couchbase.com/releases/couchbase-sync-gateway/${version}/couchbase-sync-gateway-enterprise_${version}_x86_64.deb --quiet
+    __log_debug "Download complete. Beginning Unpacking"
+    if ! dpkg -i "${tmp}/couchbase-sync-gateway-enterprise_${version}_x86_64.deb" > /dev/null ; then
+        __log_error "Error while installing ${tmp}/couchbase-sync-gateway-enterprise_${version}_x86_64.deb"
+        exit 1
+    fi
+
+    __log_info "Installation Complete. Configuring Couchbase Sync Gateway"
+
+    file="/home/sync_gateway/sync_gateway.json"
+    echo '
+    {
+    "interface": "0.0.0.0:4984",
+    "adminInterface": "0.0.0.0:4985",
+    "log": ["*"]
+    }
+    ' > ${file}
+    chmod 755 ${file}
+    chown sync_gateway ${file}
+    chgrp sync_gateway ${file}
+
+    # Need to restart to load the changes
+    #service sync_gateway stop
+    #service sync_gateway start
+    systemctl stop sync_gateway
+    systemctl start sync_gateway
 }
 
 # Post install this method is called to make changes to the system based on the environment being installed to
