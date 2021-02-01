@@ -36,6 +36,7 @@ CB_USERNAME=$DEFAULT_USERNAME
 CB_PASSWORD=$DEFAULT_PASSWORD
 DAEMON=0
 STARTUP=0
+SYNC_GATEWAY=0
 
 # Here we're setting up a handler for unexpected errors during operations
 function handle_exit() {
@@ -45,7 +46,8 @@ function handle_exit() {
 
 trap handle_exit SIGHUP SIGINT SIGQUIT SIGABRT SIGTERM
 
-
+# Process Command Line Arguments
+# View Readme.md for explanations
 while [[ $# -gt 0 ]]
 do
 key="$1"
@@ -100,6 +102,10 @@ case $key in
         __log_error "Error: Argument for $1 is missing" >&2
         exit 1
       fi; #past argment
+    ;;
+    -g|--sync-gateway)
+      SYNC_GATEWAY=1
+      shift
     ;;
     -d|--debug)
     export DEBUG=1
@@ -194,6 +200,10 @@ if [[ "$CLUSTER_HOST" == "$HOST" ]] || [[ "$CLUSTER_HOST" == "$LOCAL_IP" ]]; the
     DO_CLUSTER=1
 fi
 
+if [[ "$SYNC_GATEWAY" == 1 ]]; then
+    DO_CLUSTER=0
+fi
+
 __log_debug "The username is ${CB_USERNAME}"
 __log_debug "The password is ${CB_PASSWORD}"
 
@@ -207,7 +217,12 @@ fi
 tmp_dir=$(__generate_random_string)
 __log_info "Temp directory will be /tmp/${tmp_dir}/"
 mkdir -p "/tmp/${tmp_dir}"
-__install_couchbase "$VERSION" "/tmp/${tmp_dir}"
+
+if [[ "$SYNC_GATEWAY" == 0 ]]; then
+  __install_couchbase "$VERSION" "/tmp/${tmp_dir}"
+else
+  __install_syncgateway "$VERSION" "/tmp/${tmp_dir}"
+fi
 
 
 __log_debug "Adding an entry to /etc/hosts to simulate split brain DNS..."
@@ -220,33 +235,41 @@ __log_debug "Performing Post Installation Configuration"
 __configure_environment "$ENV"
 __log_debug "Completed Post Installation Configuration"
 
-__log_debug "CLI Installed to:  ${CLI_INSTALL_LOCATION}"
 
-__log_debug "Prior to initialization.  Let's hit the UI and make sure we get a response"
+if [[ "$SYNC_GATEWAY" == 0 ]]; then
 
-LOCAL_HOST_GET=$(wget --server-response --spider "http://localhost:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
-__log_debug "LOCALHOST http://localhost:8091/ui/index.html: $LOCAL_HOST_GET"
+  __log_debug "CLI Installed to:  ${CLI_INSTALL_LOCATION}"
 
-LOOPBACK_GET=$(wget  --server-response --spider "http://127.0.0.1:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
-__log_debug "LOOPBACK http://127.0.0.1:8091/ui/index.html: $LOOPBACK_GET"
+  __log_debug "Prior to initialization.  Let's hit the UI and make sure we get a response"
 
-HOSTNAME_GET=$(wget  --server-response --spider "http://${HOST}:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
-__log_debug "HOST http://${HOST}:8091/ui/index.html:  $HOSTNAME_GET"
+  LOCAL_HOST_GET=$(wget --server-response --spider "http://localhost:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
+  __log_debug "LOCALHOST http://localhost:8091/ui/index.html: $LOCAL_HOST_GET"
 
-IP_GET=$(wget --server-response --spider "http://${LOCAL_IP}:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
-__log_debug "IP http://${LOCAL_IP}:8091/ui/index.html: $IP_GET"
+  LOOPBACK_GET=$(wget  --server-response --spider "http://127.0.0.1:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
+  __log_debug "LOOPBACK http://127.0.0.1:8091/ui/index.html: $LOOPBACK_GET"
 
-cd "${CLI_INSTALL_LOCATION}"
+  HOSTNAME_GET=$(wget  --server-response --spider "http://${HOST}:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
+  __log_debug "HOST http://${HOST}:8091/ui/index.html:  $HOSTNAME_GET"
 
-__log_debug "Node intialization"
-resval=$(./couchbase-cli node-init \
-  --cluster="${LOCAL_IP}" \
-  --node-init-hostname="${LOCAL_IP}" \
-  --node-init-data-path=/datadisk/data \
-  --node-init-index-path=/datadisk/index \
-  --username="$CB_USERNAME" \
-  --password="$CB_PASSWORD") || __log_error "Error during Node Initialization"
-__log_debug "node-init result: \'$resval\'"
+  IP_GET=$(wget --server-response --spider "http://${LOCAL_IP}:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
+  __log_debug "IP http://${LOCAL_IP}:8091/ui/index.html: $IP_GET"
+
+  cd "${CLI_INSTALL_LOCATION}"
+
+  __log_debug "Node intialization"
+  resval=$(./couchbase-cli node-init \
+    --cluster="${LOCAL_IP}" \
+    --node-init-hostname="${LOCAL_IP}" \
+    --node-init-data-path=/datadisk/data \
+    --node-init-index-path=/datadisk/index \
+    --username="$CB_USERNAME" \
+    --password="$CB_PASSWORD") || __log_error "Error during Node Initialization"
+  __log_debug "node-init result: \'$resval\'"
+
+fi
+
+
+
 
 
 if [[ $DO_CLUSTER == 1 ]]
@@ -264,7 +287,8 @@ then
     --cluster-password="$CB_PASSWORD" \
     --services=data,index,query,fts) || __log_error "Error during Cluster Initialization"
 __log_debug "cluster-init result: \'$result\'"
-else
+elif [[ $SYNC_GATEWAY == 0 ]]; 
+then
   __log_debug "Running couchbase-cli server-add"
   output=""
   while [[ $output != "Server $LOCAL_IP:8091 added" && $output != *"Node is already part of cluster."* ]]
