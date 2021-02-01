@@ -221,7 +221,7 @@ function __install_syncgateway() {
 
     __log_info "Installing Couchbase Sync Gateway Enterprise Edition v${version}"
     __log_debug "Downloading installer to: ${tmp}"
-    wget -O "${tmp}/couchbase-sync-gateway-enterprise_${version}_x86_64.deb" https://packages.couchbase.com/releases/couchbase-sync-gateway/${version}/couchbase-sync-gateway-enterprise_${version}_x86_64.deb --quiet
+    wget -O "${tmp}/couchbase-sync-gateway-enterprise_${version}_x86_64.deb" "https://packages.couchbase.com/releases/couchbase-sync-gateway/${version}/couchbase-sync-gateway-enterprise_${version}_x86_64.deb" --quiet
     __log_debug "Download complete. Beginning Unpacking"
     if ! dpkg -i "${tmp}/couchbase-sync-gateway-enterprise_${version}_x86_64.deb" > /dev/null; then
         __log_error "Error while installing ${tmp}/couchbase-sync-gateway-enterprise_${version}_x86_64.deb"
