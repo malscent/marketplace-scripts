@@ -1,9 +1,12 @@
 FROM ubuntu:18.04
-
+RUN apt-get update
+RUN apt-get install -y python
 COPY . /app
-
-
-RUN chmod +x /app/main.sh
+COPY ./test_scripts/docker/systemctl.py /usr/bin/systemctl
+RUN chmod +x /usr/bin/systemctl
+RUN test -L /bin/systemctl || ln -sf /usr/bin/systemctl /bin/systemctl
+RUN chmod +x /app/build/couchbase_installer.sh
 RUN cd /app && ls -l
 EXPOSE 8091
-ENTRYPOINT [ "/app/main.sh" ]
+CMD [ "/usr/bin/systemctl" ]
+ENTRYPOINT [ "/app/build/couchbase_installer.sh" ]

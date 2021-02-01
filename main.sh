@@ -5,16 +5,16 @@ set -o nounset
 set -o pipefail
 
 # get script directory to reference
-SCRIPT_SOURCE=${BASH_SOURCE[0]/%main.sh/}
+# SCRIPT_SOURCE=${BASH_SOURCE[0]/%main.sh/}
 # shellcheck disable=SC1091
 # shellcheck source=common/loggers.sh
-source "${SCRIPT_SOURCE}common/loggers.sh"
+source './common/loggers.sh'
 # shellcheck disable=SC1091
 # shellcheck source=common/utils.sh
-source "${SCRIPT_SOURCE}common/utils.sh"
+source './common/utils.sh'
 # shellcheck disable=SC1091
 # shellcheck source=common/help.sh
-source "${SCRIPT_SOURCE}common/help.sh"
+source './common/help.sh'
 
 # Print header
 print_header
@@ -35,6 +35,8 @@ DEFAULT_PASSWORD=$(__generate_random_string)
 CB_USERNAME=$DEFAULT_USERNAME
 CB_PASSWORD=$DEFAULT_PASSWORD
 DAEMON=0
+STARTUP=0
+SYNC_GATEWAY=0
 
 # Here we're setting up a handler for unexpected errors during operations
 function handle_exit() {
@@ -44,7 +46,8 @@ function handle_exit() {
 
 trap handle_exit SIGHUP SIGINT SIGQUIT SIGABRT SIGTERM
 
-
+# Process Command Line Arguments
+# View Readme.md for explanations
 while [[ $# -gt 0 ]]
 do
 key="$1"
@@ -100,12 +103,20 @@ case $key in
         exit 1
       fi; #past argment
     ;;
+    -g|--sync-gateway)
+      SYNC_GATEWAY=1
+      shift
+    ;;
     -d|--debug)
     export DEBUG=1
     shift # past argument
     ;;
     -r|--run-continuously)
     DAEMON=1
+    shift
+    ;;    
+    -s|--startup)
+    STARTUP=1
     shift
     ;;
     -e|--environment)
@@ -146,33 +157,34 @@ __log_info "Configuring for Environment: ${ENV}"
 if [[ "$OS" == "UBUNTU" ]]; then
     # shellcheck disable=SC1091
     # shellcheck source=installers/ubuntu_installer.sh
-    source "${SCRIPT_SOURCE}installers/ubuntu_installer.sh"
+    source './installers/ubuntu_installer.sh'
 fi
 
 if [[ "$OS" == "CENTOS" ]]; then
     # shellcheck disable=SC1091
     # shellcheck source=installers/ubuntu_installer.sh
-    source "${SCRIPT_SOURCE}installers/centos_installer.sh"
-fi
-
-if [[ "$OS" == "ALPINE" ]]; then
-    # shellcheck disable=SC1091
-    # shellcheck source=installers/ubuntu_installer.sh
-    source "${SCRIPT_SOURCE}installers/alpine_installer.sh"
+    source './installers/centos_installer.sh'
 fi
 
 if [[ "$OS" == "RHEL" ]]; then
     # shellcheck disable=SC1091
     # shellcheck source=installers/ubuntu_installer.sh
-    source "${SCRIPT_SOURCE}installers/redhat_installer.sh"
+    source './installers/redhat_installer.sh'
 fi
 
 if [[ "$OS" == "DEBIAN" ]]; then
     # shellcheck disable=SC1091
     # shellcheck source=installers/ubuntu_installer.sh
-    source "${SCRIPT_SOURCE}installers/debian_installer.sh"
+    source './installers/debian_installer.sh'
 fi
 
+if [[ "$STARTUP" == "1" ]]; then
+  __log_info "Checking for Couchbase Server Install"
+  if [ -d "/opt/couchbase" ]; then
+    __log_info "Couchbase is already installed.  Exiting"
+    exit;
+  fi
+fi
 
 #installing prerequisites from installer
 __install_prerequisites
@@ -188,6 +200,10 @@ if [[ "$CLUSTER_HOST" == "$HOST" ]] || [[ "$CLUSTER_HOST" == "$LOCAL_IP" ]]; the
     DO_CLUSTER=1
 fi
 
+if [[ "$SYNC_GATEWAY" == 1 ]]; then
+    DO_CLUSTER=0
+fi
+
 __log_debug "The username is ${CB_USERNAME}"
 __log_debug "The password is ${CB_PASSWORD}"
 
@@ -201,7 +217,12 @@ fi
 tmp_dir=$(__generate_random_string)
 __log_info "Temp directory will be /tmp/${tmp_dir}/"
 mkdir -p "/tmp/${tmp_dir}"
-__install_couchbase "$VERSION" "/tmp/${tmp_dir}"
+
+if [[ "$SYNC_GATEWAY" == 0 ]]; then
+  __install_couchbase "$VERSION" "/tmp/${tmp_dir}"
+else
+  __install_syncgateway "$VERSION" "/tmp/${tmp_dir}"
+fi
 
 
 __log_debug "Adding an entry to /etc/hosts to simulate split brain DNS..."
@@ -214,33 +235,41 @@ __log_debug "Performing Post Installation Configuration"
 __configure_environment "$ENV"
 __log_debug "Completed Post Installation Configuration"
 
-__log_debug "CLI Installed to:  ${CLI_INSTALL_LOCATION}"
 
-__log_debug "Prior to initialization.  Let's hit the UI and make sure we get a response"
+if [[ "$SYNC_GATEWAY" == 0 ]]; then
 
-LOCAL_HOST_GET=$(wget --server-response --spider "http://localhost:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
-__log_debug "LOCALHOST http://localhost:8091/ui/index.html: $LOCAL_HOST_GET"
+  __log_debug "CLI Installed to:  ${CLI_INSTALL_LOCATION}"
 
-LOOPBACK_GET=$(wget  --server-response --spider "http://127.0.0.1:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
-__log_debug "LOOPBACK http://127.0.0.1:8091/ui/index.html: $LOOPBACK_GET"
+  __log_debug "Prior to initialization.  Let's hit the UI and make sure we get a response"
 
-HOSTNAME_GET=$(wget  --server-response --spider "http://${HOST}:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
-__log_debug "HOST http://${HOST}:8091/ui/index.html:  $HOSTNAME_GET"
+  LOCAL_HOST_GET=$(wget --server-response --spider "http://localhost:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
+  __log_debug "LOCALHOST http://localhost:8091/ui/index.html: $LOCAL_HOST_GET"
 
-IP_GET=$(wget --server-response --spider "http://${LOCAL_IP}:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
-__log_debug "IP http://${LOCAL_IP}:8091/ui/index.html: $IP_GET"
+  LOOPBACK_GET=$(wget  --server-response --spider "http://127.0.0.1:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
+  __log_debug "LOOPBACK http://127.0.0.1:8091/ui/index.html: $LOOPBACK_GET"
 
-cd "${CLI_INSTALL_LOCATION}"
+  HOSTNAME_GET=$(wget  --server-response --spider "http://${HOST}:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
+  __log_debug "HOST http://${HOST}:8091/ui/index.html:  $HOSTNAME_GET"
 
-__log_debug "Node intialization"
-resval=$(./couchbase-cli node-init \
-  --cluster="${LOCAL_IP}" \
-  --node-init-hostname="${LOCAL_IP}" \
-  --node-init-data-path=/datadisk/data \
-  --node-init-index-path=/datadisk/index \
-  --username="$CB_USERNAME" \
-  --password="$CB_PASSWORD")
-__log_debug "node-init result: \'$resval\'"
+  IP_GET=$(wget --server-response --spider "http://${LOCAL_IP}:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
+  __log_debug "IP http://${LOCAL_IP}:8091/ui/index.html: $IP_GET"
+
+  cd "${CLI_INSTALL_LOCATION}"
+
+  __log_debug "Node intialization"
+  resval=$(./couchbase-cli node-init \
+    --cluster="${LOCAL_IP}" \
+    --node-init-hostname="${LOCAL_IP}" \
+    --node-init-data-path=/datadisk/data \
+    --node-init-index-path=/datadisk/index \
+    --username="$CB_USERNAME" \
+    --password="$CB_PASSWORD") || __log_error "Error during Node Initialization"
+  __log_debug "node-init result: \'$resval\'"
+
+fi
+
+
+
 
 
 if [[ $DO_CLUSTER == 1 ]]
@@ -256,9 +285,10 @@ then
     --cluster-index-ramsize=$indexRAM \
     --cluster-username="$CB_USERNAME" \
     --cluster-password="$CB_PASSWORD" \
-    --services=data,index,query,fts)
+    --services=data,index,query,fts) || __log_error "Error during Cluster Initialization"
 __log_debug "cluster-init result: \'$result\'"
-else
+elif [[ $SYNC_GATEWAY == 0 ]]; 
+then
   __log_debug "Running couchbase-cli server-add"
   output=""
   while [[ $output != "Server $LOCAL_IP:8091 added" && $output != *"Node is already part of cluster."* ]]
@@ -273,7 +303,7 @@ else
       --server-add="$LOCAL_IP" \
       --server-add-username="$CB_USERNAME" \
       --server-add-password="$CB_PASSWORD" \
-      --services=data,index,query,fts)
+      --services=data,index,query,fts) || __log_error "Error during Server Add"
     set -e
     __log_debug "server-add output \'$output\'"
     sleep 10
@@ -288,7 +318,7 @@ else
     output=$(./couchbase-cli rebalance \
       --cluster="$CLUSTER_HOST" \
       --username="$CB_USERNAME" \
-      --password="$CB_PASSWORD")
+      --password="$CB_PASSWORD") || __log_error "Error during Rebalance"
     set -e
     __log_debug "rebalance output \'$output\'"
     sleep 10

@@ -1,7 +1,9 @@
 version: "3.9"
 services:
   rallyhost:
-    build: ../test_scripts/debian/Dockerfile
+    build:
+      context: ../
+      dockerfile: ./test_scripts/debian/Dockerfile
     image: couchbase/debian
     hostname: 'clusterhost'
     tty: true
@@ -23,7 +25,7 @@ services:
     ports: 
       - "8081:8091"
     container_name: debian-node-one
-    command: --version 6.6.1 -u couchbase -p foo123! -ch clusterhost -d -os DEBIAN -r
+    command: --version 6.6.1 -u couchbase -p foo123! -ch debian-clusterhost -d -os DEBIAN -r
     privileged: true
   nodetwo:
     image: couchbase/debian
@@ -36,7 +38,21 @@ services:
     ports: 
       - "8082:8091"
     container_name: debian-node-two
-    command: --version 6.6.1 -u couchbase -p foo123! -ch clusterhost -d -os DEBIAN -r
+    command: --version 6.6.1 -u couchbase -p foo123! -ch debian-clusterhost -d -os DEBIAN -r
     privileged: true
+  gateway:
+    image: couchbase/debian
+    hostname: 'gateway'
+    tty: true
+    depends_on:
+      - rallyhost
+    networks:
+      - cb-net-debian
+    ports: 
+      - "8083:4985"
+      - "8084:4984"
+    container_name: gateway
+    command: --version 2.8.0 -u couchbase -p foo123! -ch debian-clusterhost -d -os DEBIAN -g -r
+    privileged: true      
 networks:
   cb-net-debian:
