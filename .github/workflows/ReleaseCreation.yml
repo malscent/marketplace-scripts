@@ -40,16 +40,16 @@ jobs:
         run: $HOME/go/bin/bash_bundler bundle -e ${GITHUB_WORKSPACE}/main.sh -o ${GITHUB_WORKSPACE}/build/couchbase_installer.sh
       - name: Build minified script
         run: $HOME/go/bin/bash_bundler bundle -e ${GITHUB_WORKSPACE}/main.sh -o ${GITHUB_WORKSPACE}/build/couchbase_installer_min.sh --minify
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with: 
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
+      # - name: Create Release
+      #   id: create_release
+      #   uses: actions/create-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with: 
+      #     tag_name: ${{ github.ref }}
+      #     release_name: Release ${{ github.ref }}
+      #     draft: false
+      #     prerelease: false
       - name: Upload Standard Asset
         id: upload-standard-asset
         uses: actions/upload-release-asset@v1
