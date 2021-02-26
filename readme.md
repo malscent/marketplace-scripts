@@ -2,6 +2,17 @@
 
 These scripts are intended for usage to install and cluster multiple VM's, containers, etc.
 
+## Getting Started
+
+These scripts are bundled into a single output file with [bash_bunder](https://github.com/malscent/bash_bundler).  It can be installed with 
+```
+go get github.com/malscent/bash_bundler
+```
+
+Bundling:
+
+```bash_bundler bundle -e ./main.sh -o ./build/couchbase_installer.sh```
+
 ## Parameters
 
 ### ```-v|--version```
@@ -53,6 +64,12 @@ These scripts are intended for usage to install and cluster multiple VM's, conta
 
 **Purpose**: Specifies that the script should run forever to maintain container execution after script completes.  Used mainly for testing purposes.
 
+### ```-c|--no-color```
+
+**Usage**: ```./main.sh -c```
+
+**Purpose**: Specifies that the script should run in a no-color mode. This is for environments where colored output can be a net negative to execution.
+
 ### ```-e|--environment```
 
 **Usage**: ```./main.sh -e AZURE```
@@ -80,6 +97,8 @@ These scripts are intended for usage to install and cluster multiple VM's, conta
 ```
 
 ## Using Containers with arguments for testing
+
+Docker containers are intended for usage testing and are not representative of the expected use case. Docker Containers only use the latest image of the OS,  We do not try to test in older docker images.  If you want to use Couchbase Server inside a docker container, see the approved docker container images at [DockerHub](https://hub.docker.com/_/couchbase)
 
 ### Create Network
 First you need to create a network to join your nodes to.

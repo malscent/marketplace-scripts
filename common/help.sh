@@ -21,5 +21,5 @@ function print_header() {
 
 function print_help() {
     print_line "this is all the help you get."
-    print_line "https://github.com/malscent/marketplace-scripts/blob/main/readme.md"
+    print_line "https://github.com/couchbase-partners/marketplace-scripts/blob/main/readme.md"
 }

@@ -2,8 +2,8 @@
 
 setSwappiness ()
 {
-    KERNAL_VERSION=$(uname -r)
-    RET=$(__compareVersions "$KERNAL_VERSION" "3.5.0")
+    KERNEL_VERSION=$(uname -r)
+    RET=$(__compareVersions "$KERNEL_VERSION" "3.5.0")
     SWAPPINESS=0
     if [[ "$RET" == "1" ]]; then
         SWAPPINESS=1
@@ -16,6 +16,7 @@ setSwappiness ()
     __log_debug "Swappiness set to Zero"
 }
 
+# https://docs.couchbase.com/server/current/install/thp-disable.html
 turnOffTransparentHugepages ()
 {
     __log_debug "Disabling Transparent Hugepages"
@@ -84,11 +85,7 @@ function __install_prerequisites() {
     fi
     __log_debug "Prequisites Installation"
     yum update -q -y
-    yum install jq -q -y
-    yum install epel-release -q -y
-    yum install python2 -q -y
-    yum install net-tools -q -y
-    yum install wget -q -y
+    yum install epel-release jq net-tools python2 wget -q -y
     python2 -m pip -q install httplib2
 }
 
