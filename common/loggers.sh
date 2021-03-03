@@ -12,23 +12,35 @@ __LOG_COLOR_GREY='\033[1;30m'
 __LOG_TIMESTAMP_FORMAT="%m-%d-%YT%R:%S"
 
 function __log_error() {
+    local USED_COLOR=$__LOG_COLOR_RED
+    if [[ "${NO_COLOR}" == "1" ]]; then
+        USED_COLOR=$__LOG_NO_COLOR
+    fi
     NOW_ERROR=$(date +${__LOG_TIMESTAMP_FORMAT})
     if [[ "${ERROR}" == "1" ]]; then
-        echo -e "${__LOG_COLOR_RED}[${NOW_ERROR}][ERROR]: $*${__LOG_NO_COLOR}"
+        echo -e "${USED_COLOR}[${NOW_ERROR}][ERROR]: $*${__LOG_NO_COLOR}"
     fi
 }
 
 function __log_debug() {
+    local USED_COLOR=$__LOG_COLOR_GREY
+    if [[ "${NO_COLOR}" == "1" ]]; then
+        USED_COLOR=$__LOG_NO_COLOR
+    fi
     NOW_DEBUG=$(date +${__LOG_TIMESTAMP_FORMAT})
     if [[ "${DEBUG}" == "1" ]]; then
-        echo -e "${__LOG_COLOR_GREY}[${NOW_DEBUG}][DEBUG]: $*${__LOG_NO_COLOR}"
+        echo -e "${USED_COLOR}[${NOW_DEBUG}][DEBUG]: $*${__LOG_NO_COLOR}"
     fi
 }
 
 function __log_warning() {
+    local USED_COLOR=$__LOG_COLOR_YELLOW
+    if [[ "${NO_COLOR}" == "1" ]]; then
+        USED_COLOR=$__LOG_NO_COLOR
+    fi
     NOW_WARNING=$(date +${__LOG_TIMESTAMP_FORMAT})
     if [[ "${WARNING}" == "1" ]]; then
-        echo -e "${__LOG_COLOR_YELLOW}[${NOW_WARNING}][WARN]: $*${__LOG_NO_COLOR}"
+        echo -e "${USED_COLOR}[${NOW_WARNING}][WARN]: $*${__LOG_NO_COLOR}"
     fi
 }
 

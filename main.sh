@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-set -o errexit
-set -o nounset
-set -o pipefail
+set -eou pipefail
 
 # get script directory to reference
 # SCRIPT_SOURCE=${BASH_SOURCE[0]/%main.sh/}
@@ -23,8 +21,10 @@ print_header
 #initialize help variable
 HELP=0
 
-#initialize variables
+# These variables are utilized by logging
 export DEBUG=0
+export NO_COLOR=0
+#initialize variables
 VERSION="6.6.1"
 OS="UBUNTU"
 AVAILABLE_OS_VALUES=("UBUNTU" "RHEL" "CENTOS" "DEBIAN")
@@ -117,6 +117,10 @@ case $key in
     ;;    
     -s|--startup)
     STARTUP=1
+    shift
+    ;;
+    -c|--no-color)
+    export NO_COLOR=1
     shift
     ;;
     -e|--environment)
@@ -214,14 +218,13 @@ fi
 
 
 
-tmp_dir=$(__generate_random_string)
-__log_info "Temp directory will be /tmp/${tmp_dir}/"
-mkdir -p "/tmp/${tmp_dir}"
+tmp_dir=$(mktemp -d)
+__log_info "Temp directory will be ${tmp_dir}"
 
 if [[ "$SYNC_GATEWAY" == 0 ]]; then
-  __install_couchbase "$VERSION" "/tmp/${tmp_dir}"
+  __install_couchbase "$VERSION" "${tmp_dir}"
 else
-  __install_syncgateway "$VERSION" "/tmp/${tmp_dir}"
+  __install_syncgateway "$VERSION" "${tmp_dir}"
 fi
 
 
@@ -294,17 +297,18 @@ then
   while [[ $output != "Server $LOCAL_IP:8091 added" && $output != *"Node is already part of cluster."* ]]
   do
     __log_debug "In server add loop"
-    # setting +e because couchbase cli likes to error and kill the script and we justs want to keep looping until successful
-    set +e
-    output=$(./couchbase-cli server-add \
+    if ./couchbase-cli server-add \
       --cluster="$CLUSTER_HOST" \
       --username="$CB_USERNAME" \
       --password="$CB_PASSWORD" \
       --server-add="$LOCAL_IP" \
       --server-add-username="$CB_USERNAME" \
       --server-add-password="$CB_PASSWORD" \
-      --services=data,index,query,fts) || __log_error "Error during Server Add"
-    set -e
+      --services=data,index,query,fts; then
+      output="Server $LOCAL_IP:8091 added"
+    else
+      __log_error "Error during Server Add"
+    fi 
     __log_debug "server-add output \'$output\'"
     sleep 10
   done
@@ -313,13 +317,14 @@ then
   output=""
   while [[ ! $output =~ "SUCCESS" ]]
   do
-    # setting +e because couchbase cli likes to error and kill the script and we justs want to keep looping until successful
-    set +e
-    output=$(./couchbase-cli rebalance \
+    if ./couchbase-cli rebalance \
       --cluster="$CLUSTER_HOST" \
       --username="$CB_USERNAME" \
-      --password="$CB_PASSWORD") || __log_error "Error during Rebalance"
-    set -e
+      --password="$CB_PASSWORD"; then
+      output="SUCCESS"
+      else
+        __log_error "Error during Rebalance"
+      fi
     __log_debug "rebalance output \'$output\'"
     sleep 10
   done

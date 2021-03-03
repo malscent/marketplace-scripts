@@ -49,6 +49,7 @@ adjustTCPKeepalive ()
     __log_debug "TCP keepalive setting changed."
 }
 
+#https://docs.couchbase.com/server/current/install/thp-disable.html
 turnOffTransparentHugepages ()
 {
     __log_debug "Disabling Transparent Hugepages"
@@ -101,8 +102,8 @@ esac
 
 setSwappiness()
 {
-    KERNAL_VERSION=$(uname -r)
-    RET=$(__compareVersions "$KERNAL_VERSION" "3.5.0")
+    KERNEL_VERSION=$(uname -r)
+    RET=$(__compareVersions "$KERNEL_VERSION" "3.5.0")
     SWAPPINESS=0
     if [[ "$RET" == "1" ]]; then
         SWAPPINESS=1
@@ -154,27 +155,19 @@ function __install_prerequisites() {
     fi
     __log_info "Installing prerequisites..."
     
-    apt-get update > /dev/null
+    __log_debug "Updating package repositories"
+    until apt-get update > /dev/null; do
+        __log_error "Error performing package repository update"
+        sleep 2
+    done
     # shellcheck disable=SC2034
     DEBIAN_FRONTEND=noninteractive
-    __log_debug "Installing apt-utils"
-    apt-get install --assume-yes apt-utils dialog  -qq > /dev/null
-    __log_debug "apt-utils install complete"
-    __log_debug "Installing python-httplib2"
-    apt-get -y install python-httplib2 -qq > /dev/null
-    __log_debug "python-httplib2 install complete"
-    __log_debug "Installing jq"
-    apt-get -y install jq -qq > /dev/null
-    __log_debug "jq install complete"
-    __log_debug "Installing net-tools"
-    apt-get -y install net-tools -qq > /dev/null
-    __log_debug "net-tools install complete"
-    __log_debug "Installing wget"
-    apt-get -y install wget -qq > /dev/null
-    __log_debug "wget install complete."
-    __log_debug "Installing lsb-base"
-    apt-get -y install lsb-base -qq > /dev/null
-    __log_debug "lsb_base install complete."
+    __log_debug "Installing Prequisites"
+    until apt-get install --assume-yes apt-utils dialog python-httplib2 jq net-tools wget lsb-release  -qq > /dev/null; do
+        __log_error "Error during pre-requisite installation"
+        sleep 2
+    done
+    __log_debug "Prequisitie Installation complete"
 }
 
 # Main Installer function.  This actually performs the download of the binaries
@@ -195,13 +188,19 @@ function __install_couchbase() {
     __log_debug "Downloading installer to: ${tmp}"
     wget -O "${tmp}/couchbase-server-enterprise_${version}-debian${OS_VERSION}_amd64.deb" "http://packages.couchbase.com/releases/${version}/couchbase-server-enterprise_${version}-debian${OS_VERSION}_amd64.deb" -q
     __log_debug "Download Complete.  Beginning Unpacking"
-    if ! dpkg -i "${tmp}/couchbase-server-enterprise_${version}-debian${OS_VERSION}_amd64.deb" > /dev/null; then
+    until dpkg -i "${tmp}/couchbase-server-enterprise_${version}-debian${OS_VERSION}_amd64.deb" > /dev/null; do
         __log_error "Error while installing ${tmp}/couchbase-server-enterprise_${version}-debian${OS_VERSION}_amd64.deb"
-        exit 1
-    fi
+        sleep 1
+    done
     __log_debug "Unpacking complete.  Beginning Installation"
-    apt-get update -qq > /dev/null
-    apt-get -y install couchbase-server -qq > /dev/null
+    until apt-get update -qq > /dev/null; do
+        __log_error "Error updating package repositories"
+        sleep 1
+    done
+    until apt-get -y install couchbase-server -qq > /dev/null; do
+        __log_error "Error while installing ${tmp}/couchbase-server-enterprise_${version}-debian${OS_VERSION}_amd64.deb"
+        sleep 1
+    done
 
     #return the location of where the couchbase cli is installed
     export CLI_INSTALL_LOCATION="/opt/couchbase/bin"
