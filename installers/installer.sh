@@ -47,12 +47,14 @@ function __check_os_version() {
 }
 
 function __centos_prerequisites() {
+    local sync_gateway=$1
     yum update -q -y
     yum install epel-release jq net-tools python2 wget -q -y
     python2 -m pip -q install httplib2
 }
 
 function __ubuntu_prerequisites() {
+    local sync_gateway=$1
     __log_debug "Updating package repositories"
     until apt-get update > /dev/null; do
         __log_error "Error performing package repository update"
@@ -69,25 +71,26 @@ function __ubuntu_prerequisites() {
 }
 
 function __rhel_prerequisites() {
-    __centos_prerequisites
+    __centos_prerequisites "$1"
 }
 
 function __debian_prerequisites() {
-    __ubuntu_prerequisites
+    __ubuntu_prerequisites "$1"
 }
 
 function __install_prerequisites() {
     local os=$1
+    local sync_gateway=$2
     __check_os_version "$os"
     __log_debug "Prequisites Installation"
     if [[ "$os" == "CENTOS" ]]; then
-        __centos_prerequisites
+        __centos_prerequisites "$sync_gateway"
     elif [[ "$os" == "DEBIAN" ]]; then
-        __debian_prerequisites
+        __debian_prerequisites "$sync_gateway"
     elif [[ "$os" == "RHEL" ]]; then
-        __rhel_prerequisites
+        __rhel_prerequisites "$sync_gateway"
     else
-        __ubuntu_prerequisites
+        __ubuntu_prerequisites "$sync_gateway"
     fi
     __log_debug "Prequisites Complete"
 }
@@ -166,7 +169,10 @@ adjustTCPKeepalive ()
 
 formatDataDisk ()
 {
-    if [[ "$2" == "AZURE" ]]; then
+    local os=$1
+    local env=$2
+    local sync_gateway=$3
+    if [[ "$env" == "AZURE" && "$sync_gateway" -eq "0" ]]; then
         # This script formats and mounts the drive on lun0 as /datadisk
         # This is azure specific?  
         DISK="/dev/disk/azure/scsi1/lun0"
@@ -178,7 +184,7 @@ formatDataDisk ()
         p
         1
 
-        
+
         t
         83
         w"| fdisk ${DISK}
@@ -243,19 +249,20 @@ function __configure_environment() {
     echo "Setting up Environment"
     local env=$1
     local os=$2
+    local sync_gateway=$3
     __log_debug "Setting up for environment: ${env}"
-    turnOffTransparentHugepages "$os"
-    setSwappiness "$os"
-    adjustTCPKeepalive "$os" "$env"
-    formatDataDisk "$os" "$env"
+    turnOffTransparentHugepages "$os" "$env" "$sync_gateway"
+    setSwappiness "$os" "$env" "$sync_gateway"
+    adjustTCPKeepalive "$os" "$env" "$sync_gateway"
+    formatDataDisk "$os" "$env" "$sync_gateway"
     if [[ "$os" == "CENTOS" ]]; then
-        __centos_environment "$env"
+        __centos_environment "$env" "$sync_gateway"
     elif [[ "$os" == "DEBIAN" ]]; then
-        __debian_environment "$env"
+        __debian_environment "$env" "$sync_gateway"
     elif [[ "$os" == "RHEL" ]]; then
-        __rhel_environment "$env"
+        __rhel_environment "$env" "$sync_gateway"
     else
-        __ubuntu_environment "$env"
+        __ubuntu_environment "$env" "$sync_gateway"
     fi
 }
 
@@ -401,6 +408,11 @@ function __install_couchbase() {
     local version=$1
     local tmp=$2
     local os=$3
+    local sync_gateway=$4
+    if [[ "$sync_gateway" -eq "1" ]]; then
+        __install_syncgateway "$version" "$tmp" "$os"
+        return 0
+    fi
     echo "Installing Couchbase"
         if [[ "$os" == "CENTOS" ]]; then
         version=$(__findClosestVersion "$1" "${CENTOS_SUPPORTED_VERSIONS[@]}")
