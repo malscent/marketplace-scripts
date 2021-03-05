@@ -171,7 +171,7 @@ if [[ "$STARTUP" == "1" ]]; then
 fi
 
 #installing prerequisites from installer
-__install_prerequisites "$OS"
+__install_prerequisites "$OS" "$ENV" "$SYNC_GATEWAY"
 
 #Getting information to determine whether this is the cluster host or not.  
 LOCAL_IP=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
@@ -201,11 +201,8 @@ fi
 tmp_dir=$(mktemp -d)
 __log_info "Temp directory will be ${tmp_dir}"
 
-if [[ "$SYNC_GATEWAY" == 0 ]]; then
-  __install_couchbase "$VERSION" "${tmp_dir}" "$OS"
-else
-  __install_syncgateway "$VERSION" "${tmp_dir}" "$OS"
-fi
+
+__install_couchbase "$VERSION" "${tmp_dir}" "$OS" "$SYNC_GATEWAY"
 
 
 __log_debug "Adding an entry to /etc/hosts to simulate split brain DNS..."
@@ -215,7 +212,7 @@ echo "
 " >> /etc/hosts
 
 __log_debug "Performing Post Installation Configuration"
-__configure_environment "$ENV" "$OS"
+__configure_environment "$ENV" "$OS" "$SYNC_GATEWAY"
 __log_debug "Completed Post Installation Configuration"
 
 
