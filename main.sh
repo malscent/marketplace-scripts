@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
 set -eou pipefail
-
+# These variables are utilized by logging
+export DEBUG=0
+export NO_COLOR=0
 # get script directory to reference
 # SCRIPT_SOURCE=${BASH_SOURCE[0]/%main.sh/}
 # shellcheck disable=SC1091
@@ -24,9 +26,7 @@ print_header
 #initialize help variable
 HELP=0
 
-# These variables are utilized by logging
-export DEBUG=0
-export NO_COLOR=0
+
 #initialize variables
 VERSION="6.6.1"
 OS="UBUNTU"

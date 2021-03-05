@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-__log_debug "Getting Terminal Size for printing"
 if [ -t 0 ];
 then
     terminal_size=$(stty size)
