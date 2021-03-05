@@ -177,6 +177,8 @@ formatDataDisk ()
         echo "n
         p
         1
+
+        
         t
         83
         w"| fdisk ${DISK}
