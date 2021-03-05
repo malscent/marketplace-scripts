@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -eou pipefail
+set -meou pipefail
 
 # get script directory to reference
 # SCRIPT_SOURCE=${BASH_SOURCE[0]/%main.sh/}
