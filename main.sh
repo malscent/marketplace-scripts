@@ -13,6 +13,9 @@ source './common/utils.sh'
 # shellcheck disable=SC1091
 # shellcheck source=common/help.sh
 source './common/help.sh'
+# shellcheck disable=SC1091
+# shellcheck source=installers.installer.sh
+source "./installers/installer.sh"
 
 # Print header
 print_header
@@ -158,29 +161,6 @@ __log_info "Beginning execution"
 __log_info "Installing on OS: ${OS}"
 __log_info "Configuring for Environment: ${ENV}"
 
-if [[ "$OS" == "UBUNTU" ]]; then
-    # shellcheck disable=SC1091
-    # shellcheck source=installers/ubuntu_installer.sh
-    source './installers/ubuntu_installer.sh'
-fi
-
-if [[ "$OS" == "CENTOS" ]]; then
-    # shellcheck disable=SC1091
-    # shellcheck source=installers/ubuntu_installer.sh
-    source './installers/centos_installer.sh'
-fi
-
-if [[ "$OS" == "RHEL" ]]; then
-    # shellcheck disable=SC1091
-    # shellcheck source=installers/ubuntu_installer.sh
-    source './installers/redhat_installer.sh'
-fi
-
-if [[ "$OS" == "DEBIAN" ]]; then
-    # shellcheck disable=SC1091
-    # shellcheck source=installers/ubuntu_installer.sh
-    source './installers/debian_installer.sh'
-fi
 
 if [[ "$STARTUP" == "1" ]]; then
   __log_info "Checking for Couchbase Server Install"
@@ -191,7 +171,7 @@ if [[ "$STARTUP" == "1" ]]; then
 fi
 
 #installing prerequisites from installer
-__install_prerequisites
+__install_prerequisites "$OS"
 
 #Getting information to determine whether this is the cluster host or not.  
 LOCAL_IP=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
@@ -222,9 +202,9 @@ tmp_dir=$(mktemp -d)
 __log_info "Temp directory will be ${tmp_dir}"
 
 if [[ "$SYNC_GATEWAY" == 0 ]]; then
-  __install_couchbase "$VERSION" "${tmp_dir}"
+  __install_couchbase "$VERSION" "${tmp_dir}" "$OS"
 else
-  __install_syncgateway "$VERSION" "${tmp_dir}"
+  __install_syncgateway "$VERSION" "${tmp_dir}" "$OS"
 fi
 
 
@@ -235,7 +215,7 @@ echo "
 " >> /etc/hosts
 
 __log_debug "Performing Post Installation Configuration"
-__configure_environment "$ENV"
+__configure_environment "$ENV" "$OS"
 __log_debug "Completed Post Installation Configuration"
 
 
