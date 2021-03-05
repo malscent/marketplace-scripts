@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
-terminal_size=$(stty size)
+__log_debug "Getting Terminal Size for printing"
+if [ -t 0 ];
+then
+    terminal_size=$(stty size)
+else
+    terminal_size="50 80"
+fi
+
 columns="${terminal_size#* }"
 
 function print_line()
