@@ -138,12 +138,13 @@ case \$1 in
 esac
     " > /etc/init.d/disable-thp
     chmod 755 /etc/init.d/disable-thp
-    service disable-thp start
     if [[ "$os" == "CENTOS"  || "$os" == "RHEL" ]]; then
         chkconfig --add disable-thp
     elif [[ "$os" == "DEBIAN" || "$os" == "UBUNTU" ]]; then
         update-rc.d disable-thp defaults
     fi
+    service disable-thp start
+
     __log_debug "Transparent Hugepages have been disabled."
 }
 
