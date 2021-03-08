@@ -40,6 +40,7 @@ CB_PASSWORD=$DEFAULT_PASSWORD
 DAEMON=0
 STARTUP=0
 SYNC_GATEWAY=0
+WAIT=0
 
 # Here we're setting up a handler for unexpected errors during operations
 function handle_exit() {
@@ -89,7 +90,7 @@ case $key in
       fi; #past argment
     ;;
     -u|--user)
-          if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         CB_USERNAME=$2
         shift 2
       else
@@ -139,6 +140,15 @@ case $key in
         __log_error "Error: Argument for $1 is missing" >&2
         exit 1
       fi;
+    ;;
+    -w|--wait-nodes)
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
+        WAIT=$2
+        shift 2
+      else
+        __log_error "Error: Argument for $1 is missing" >&2
+        exit 1
+      fi; #past argment
     ;;
     -h|--help)
     HELP=1
@@ -306,7 +316,30 @@ then
     sleep 10
   done
 fi
+__log_debug "Waiting for $WAIT nodes"
+if [[ "$WAIT" -ne "0" ]]; then
+  __log_info "Beginning wait for cluster to have $WAIT nodes"
+  healthy=0
+  checks=0
+
+  until [[ "$healthy" -eq "$WAIT" ]] || [[ "$checks" -ge "50" ]]; do
+    __log_debug "Healthy node check - $healthy/$WAIT"
+    healthy=$(wget -O -  \
+                   --user "$CB_USERNAME" \
+                   --password "$CB_PASSWORD" \
+                   http://localhost:8091/pools/nodes \
+                   -q \
+                   | jq '[.nodes[] | select(.status == "healthy")] | length')
+    (( checks += 1 ))
+    sleep 3
+  done
+  __log_info "All nodes are healty - $healthy/$WAIT"
+fi
+
+__post_install_finalization "$ENV"
 __log_info "Installation of Couchbase v${VERSION} is complete."
+
+
 
 if [[ "$DAEMON" == 1 ]]; then
     __log_info "Going into daemon mode.  Will continue execution until cancelled."

@@ -12,7 +12,7 @@ services:
     networks:
       - cb-net-redhat
     container_name: redhat-clusterhost
-    command: --version 6.6.1 -u couchbase -p foo123! -ch clusterhost -d -os RHEL -r
+    command: --version 6.6.1 -u couchbase -p foo123! -ch clusterhost -d -os RHEL -r -w 3
     privileged: true
   nodeone:
     image: couchbase/redhat

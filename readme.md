@@ -84,6 +84,12 @@ Bundling:
 
 **Purpose**: Specifies the install script to run in a mode that is intended to run on every boot of the server
 
+### ```-w|--wait-nodes```
+
+**Usage**: ```./main.sh -w 5
+
+**Purpose**: Specifies that the script should not report success until it sees N nodes in the cluster.  This is used for GCP notifications on completion
+
 ### ```-h|--help```
 
 **Usage**: ```./main.sh -```
