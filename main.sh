@@ -317,7 +317,8 @@ then
   done
 fi
 __log_debug "Waiting for $WAIT nodes"
-if [[ "$WAIT" -ne "0" ]]; then
+
+if [[ "$WAIT" -ne "0" && "$SYNC_GATEWAY" -ne "1" ]]; then
   __log_info "Beginning wait for cluster to have $WAIT nodes"
   healthy=0
   checks=0

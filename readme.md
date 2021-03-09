@@ -139,3 +139,7 @@ To take down the cluster:
 ```
 docker-compose -f ./compose-files/<OS SPECIFIC FILE>.yml down
 ```
+
+## Development Considerations
+
+* Use Wget not Curl
