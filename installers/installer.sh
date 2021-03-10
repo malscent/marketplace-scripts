@@ -78,9 +78,37 @@ function __debian_prerequisites() {
     __ubuntu_prerequisites "$1"
 }
 
+function __get_gcp_metadata_value() {
+    wget -O - \
+         --header="Metadata-Flavor:Google" \
+         -q \
+         --retry-connrefused \
+         --waitretry=1 \
+         --read-timeout=10 \
+         --timeout=10 \
+         -t 5 \
+         "http://metadata/computeMetadata/v1/$1"
+}
+
+function __get_gcp_attribute_value() {
+    __get_gcp_metadata_value "instance/attributes/$1"
+}
+
+#These values are for GCP
+export ACCESS_TOKEN=""
+export PROJECT_ID=""
+export EXTERNAL_IP=""
+export CONFIG=""
+export EXTERNAL_IP_VAR_PATH=""
+export SUCCESS_STATUS_PATH=""
+export FAILURE_STATUS_PATH=""
+export NODE_PRIVATE_DNS=""
+export EXTERNAL_IP_PAYLOAD=""
+
 function __install_prerequisites() {
     local os=$1
     local sync_gateway=$2
+    local env=$3
     __check_os_version "$os"
     __log_debug "Prequisites Installation"
     if [[ "$os" == "CENTOS" ]]; then
@@ -92,8 +120,48 @@ function __install_prerequisites() {
     else
         __ubuntu_prerequisites "$sync_gateway"
     fi
+
+    #There are some "startup" functions that need run for GCP script
+    if [[ "$env" == "GCP" ]]; then
+        echo "Running GCP Prequisites"
+        ACCESS_TOKEN=$(__get_gcp_metadata_value "instance/service-accounts/default/token" | jq -r '.access_token')
+        __log_debug "GCP Access Token:  $ACCESS_TOKEN"
+        PROJECT_ID=$(__get_gcp_metadata_value "project/project-id")
+        __log_debug "GCP Project Id: $PROJECT_ID"
+        EXTERNAL_IP=$(__get_gcp_metadata_value "instance/network-interfaces/0/access-configs/0/external-ip")
+        __log_debug "GCP External IP:  $EXTERNAL_IP"
+        CONFIG=$(__get_gcp_attribute_value "runtime-config-name")
+        __log_debug "GCP Config: $CONFIG"
+        EXTERNAL_IP_VAR_PATH=$(__get_gcp_attribute_value "external-ip-variable-path")
+        __log_debug "GCP External Ip Var Path: $EXTERNAL_IP_VAR_PATH"
+        SUCCESS_STATUS_PATH="$(__get_gcp_attribute_value "status-success-base-path")/$(hostname)"
+        __log_debug "GCP Success Status Path: $SUCCESS_STATUS_PATH"
+        FAILURE_STATUS_PATH="$(__get_gcp_attribute_value "status-failure-base-path")/$(hostname)"
+        __log_debug "GCP Failure Status Path: $FAILURE_STATUS_PATH"
+        NODE_PRIVATE_DNS=$(__get_gcp_metadata_value "instance/hostname")
+        __log_debug "GCP Node Private DNS: $NODE_PRIVATE_DNS"
+        EXTERNAL_IP_PAYLOAD="$(printf '{"name": "%s", "text": "%s"}' \
+            "projects/${PROJECT_ID}/configs/${CONFIG}/variables/${EXTERNAL_IP_VAR_PATH}" \
+            "${EXTERNAL_IP}")"
+
+        wget -O - \
+             -q \
+             --retry-connrefused \
+             --waitretry=1 \
+             --read-timeout=10 \
+             --timeout=10 \
+             -t 5 \
+             --header="Authorization: Bearer ${ACCESS_TOKEN}" \
+             --header "Content-Type: application/json" \
+             --header "X-GFE-SSL: yes" \
+             --method=PUT \
+             --body-data="$EXTERNAL_IP_PAYLOAD" \
+             "https://runtimeconfig.googleapis.com/v1beta1/projects/${PROJECT_ID}/configs/variables/${EXTERNAL_IP_VAR_PATH}"
+    fi
     __log_debug "Prequisites Complete"
 }
+
+
 # https://docs.couchbase.com/server/current/install/thp-disable.html
 turnOffTransparentHugepages ()
 {
@@ -350,7 +418,7 @@ function __install_couchbase_centos() {
     local tmp=$2
     __log_info "Installing Couchbase Server v${version}..."
     __log_debug "Downloading installer to: ${tmp}"
-    curl --output "${tmp}/couchbase-release-1.0-x86_64.rpm" https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-x86_64.rpm
+    wget -O "${tmp}/couchbase-release-1.0-x86_64.rpm" https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-x86_64.rpm -q
     __log_debug "Download Complete.  Beginning Unpacking"
     rpm -i "${tmp}/couchbase-release-1.0-x86_64.rpm"
     __log_debug "Unpacking complete.  Beginning Installation"
@@ -457,4 +525,32 @@ function __install_couchbase() {
 
     export CLI_INSTALL_LOCATION="/opt/couchbase/bin"
 
+}
+# This is a method to perform any final actions after the cluster has been created and/or joined
+# Precipitated because GCP requires us to send a "Success" after we're done doing our work
+function __post_install_finalization() {
+    __log_debug "Beginning Post Install Finalization"
+    local env=$1
+    if [[ "$env" == "GCP" ]]; then
+        SUCCESS_PAYLOAD="$(printf '{"name": "%s", "text": "%s"}' \
+        "projects/${PROJECT_ID}/configs/${CONFIG}/variables/${SUCCESS_STATUS_PATH}" \
+        "success")"
+
+        __log_debug "Sending success notification for startup waiter on GCP"
+
+        # Notify waiter
+    wget -O - \
+         -q \
+         --retry-connrefused \
+         --waitretry=1 \
+         --read-timeout=10 \
+         --timeout=10 \
+         -t 5 \
+         --body-data="${SUCCESS_PAYLOAD}" \
+         --header="Authorization: Bearer ${ACCESS_TOKEN}" \
+         --header "Content-Type: application/json" \
+         --header "X-GFE-SSL: yes" \
+         --method=POST
+         "https://runtimeconfig.googleapis.com/v1beta1/projects/${PROJECT_ID}/configs/${CONFIG}/variables"
+    fi
 }
