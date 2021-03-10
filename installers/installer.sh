@@ -123,7 +123,7 @@ function __install_prerequisites() {
 
     #There are some "startup" functions that need run for GCP script
     if [[ "$env" == "GCP" ]]; then
-        echo "Running GCP Prequisites"
+        __log_debug "Running GCP Prequisites"
         ACCESS_TOKEN=$(__get_gcp_metadata_value "instance/service-accounts/default/token" | jq -r '.access_token')
         __log_debug "GCP Access Token:  $ACCESS_TOKEN"
         PROJECT_ID=$(__get_gcp_metadata_value "project/project-id")
@@ -531,6 +531,17 @@ function __install_couchbase() {
 function __post_install_finalization() {
     __log_debug "Beginning Post Install Finalization"
     local env=$1
+    ACCESS_TOKEN=$(__get_gcp_metadata_value "instance/service-accounts/default/token" | jq -r '.access_token')
+    __log_debug "GCP Access Token:  $ACCESS_TOKEN"
+    PROJECT_ID=$(__get_gcp_metadata_value "project/project-id")
+    __log_debug "GCP Project Id: $PROJECT_ID"
+    CONFIG=$(__get_gcp_attribute_value "runtime-config-name")
+    __log_debug "GCP Config: $CONFIG"
+    SUCCESS_STATUS_PATH="$(__get_gcp_attribute_value "status-success-base-path")/$(hostname)"
+    __log_debug "GCP Success Status Path: $SUCCESS_STATUS_PATH"
+    FAILURE_STATUS_PATH="$(__get_gcp_attribute_value "status-failure-base-path")/$(hostname)"
+    __log_debug "GCP Failure Status Path: $FAILURE_STATUS_PATH"
+
     if [[ "$env" == "GCP" ]]; then
         host=$(hostname)
         SUCCESS_PAYLOAD="$(printf '{"name": "%s", "text": "%s"}' \
