@@ -189,7 +189,9 @@ HOST=$(hostname) || hostnamectl
 __log_debug "Hostname:  ${HOST}"
 __log_debug "Local IP: ${LOCAL_IP}"
 DO_CLUSTER=0
-if [[ "$CLUSTER_HOST" == "$HOST" ]] || [[ "$CLUSTER_HOST" == "$LOCAL_IP" ]]; then
+
+# Check if host is cluster host, or local ip, or if the clusterhost contains the host for FQDN on GCP
+if [[ "$CLUSTER_HOST" == "$HOST" ]] || [[ "$CLUSTER_HOST" == "$LOCAL_IP" ]] || [[ "$CLUSTER_HOST" == *"$HOST"* ]]; then
     __log_info "${CLUSTER_HOST} is host and is this machine"
     DO_CLUSTER=1
 fi
