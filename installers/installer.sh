@@ -550,7 +550,7 @@ function __post_install_finalization() {
          --header="Authorization: Bearer ${ACCESS_TOKEN}" \
          --header "Content-Type: application/json" \
          --header "X-GFE-SSL: yes" \
-         --method=POST
+         --method=POST \
          "https://runtimeconfig.googleapis.com/v1beta1/projects/${PROJECT_ID}/configs/${CONFIG}/variables"
     fi
 }
