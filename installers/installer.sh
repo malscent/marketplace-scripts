@@ -532,15 +532,15 @@ function __post_install_finalization() {
     __log_debug "Beginning Post Install Finalization"
     local env=$1
     if [[ "$env" == "GCP" ]]; then
+        host=$(hostname)
         SUCCESS_PAYLOAD="$(printf '{"name": "%s", "text": "%s"}' \
-        "projects/${PROJECT_ID}/configs/${CONFIG}/variables/${SUCCESS_STATUS_PATH}" \
+        "projects/${PROJECT_ID}/configs/${CONFIG}/variables/${SUCCESS_STATUS_PATH}/${host}" \
         "success")"
 
         __log_debug "Sending success notification for startup waiter on GCP"
 
         # Notify waiter
     wget -O - \
-         -q \
          --retry-connrefused \
          --waitretry=1 \
          --read-timeout=10 \
