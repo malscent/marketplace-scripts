@@ -18,6 +18,9 @@ UBUNTU_16_SUPPORTED_VERSIONS=("5.0.1" "5.1.0" "5.1.1" "5.1.2" "5.1.3" "5.5.0" "5
 UBUNTU_18_SUPPORTED_VERSIONS=("6.0.1" "6.0.2" "6.0.3" "6.0.4" "6.5.0" "6.5.1" "6.6.0" "6.6.1" "7.0.0")
 UBUNTU_20_SUPPORTED_VERSIONS=("7.0.0")
 UBUNTU_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0")
+AMAZON_LINUX_OS_SUPPORTED_VERSIONS=("2")
+AMAZON_LINUX_SUPPORTED_VERSIONS=("6.5.0" "6.5.1" "6.6.0" "6.6.1")
+AMAZON_LINUX_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0")
 
 function __check_os_version() {
     __log_debug "Checking OS compatability"
@@ -33,6 +36,9 @@ function __check_os_version() {
     elif [[ "$os" == "RHEL" ]]; then
         OS_VERSION=$(awk '/^VERSION_ID=/{print $1}' /etc/os-release | awk -F"=" '{print $2}' | sed -e 's/^"//' -e 's/"$//')
         SUPPORTED_VERSIONS=("${RHEL_OS_SUPPORTED_VERSIONS[*]}")
+    elif [[ "$os" == "AMAZON" ]]; then
+        OS_VERSION=$(awk '/^VERSION_ID=/{print $1}' /etc/os-release | awk -F"=" '{print $2}' | sed -e 's/^"//' -e 's/"$//')
+        SUPPORTED_VERSIONS=($"${AMAZON_LINUX_OS_SUPPORTED_VERSIONS[*]}")
     else
         OS_VERSION=$(awk 'NR==1{print $2}' /etc/issue | cut -c-5)
         SUPPORTED_VERSIONS=("${UBUNTU_OS_SUPPORTED_VERSIONS[@]}")
@@ -78,6 +84,10 @@ function __debian_prerequisites() {
     __ubuntu_prerequisites "$1"
 }
 
+function __amazon_prerequisites() {
+    __centos_prerequisites "$1"
+}
+
 function __get_gcp_metadata_value() {
     wget -O - \
          --header="Metadata-Flavor:Google" \
@@ -117,6 +127,8 @@ function __install_prerequisites() {
         __debian_prerequisites "$sync_gateway"
     elif [[ "$os" == "RHEL" ]]; then
         __rhel_prerequisites "$sync_gateway"
+    elif [[ "$os" == "AMAZON" ]]; then
+        __amazon_prerequisites "$sync_gateway"
     else
         __ubuntu_prerequisites "$sync_gateway"
     fi
@@ -209,7 +221,7 @@ case \$1 in
 esac
     " > /etc/init.d/disable-thp
     chmod 755 /etc/init.d/disable-thp
-    if [[ "$os" == "CENTOS"  || "$os" == "RHEL" ]]; then
+    if [[ "$os" == "CENTOS"  || "$os" == "RHEL" || "$os" == "AMAZON" ]]; then
         chkconfig --add disable-thp
     elif [[ "$os" == "DEBIAN" || "$os" == "UBUNTU" ]]; then
         update-rc.d disable-thp defaults
@@ -240,9 +252,23 @@ formatDataDisk ()
     local os=$1
     local env=$2
     local sync_gateway=$3
+    if [[ "$env" == "AWS" && "$sync_gateway" -eq "0" ]]; then
+        __log_debug "AWS: Formatting data disk"
+        DEVICE=/dev/sdk
+        MOUNTPOINT=/mnt/datadisk
+        mkfs -t ext4 ${DEVICE}
+        LINE="${DEVICE}\t${MOUNTPOINT}\text4\tdefaults,nofail\t0\t2"
+        echo -e ${LINE} >> /etc/fstab
+        mkdir $MOUNTPOINT
+        mount -a
+        chown couchbase $MOUNTPOINT
+        chgrp couchbase $MOUNTPOINT
+    fi
+
     if [[ "$env" == "AZURE" && "$sync_gateway" -eq "0" ]]; then
         # This script formats and mounts the drive on lun0 as /datadisk
-        # This is azure specific?  
+        __log_debug "AZURE: Formatting data disk"
+
         DISK="/dev/disk/azure/scsi1/lun0"
         PARTITION="/dev/disk/azure/scsi1/lun0-part1"
         MOUNTPOINT="/datadisk"
@@ -313,6 +339,10 @@ function __rhel_environment() {
     __log_debug "Configuring RHEL Specific Environment Settings"
 }
 
+function __amazon_environment() {
+    __log_debug "Configuring Amazon Linux Specific Environment Settings"
+}
+
 function __configure_environment() {
     echo "Setting up Environment"
     local env=$1
@@ -329,6 +359,8 @@ function __configure_environment() {
         __debian_environment "$env" "$sync_gateway"
     elif [[ "$os" == "RHEL" ]]; then
         __rhel_environment "$env" "$sync_gateway"
+    elif [[ "$os" == "AMAZON" ]]; then
+        __amazon_environment "$env" "$sync_gateway"
     else
         __ubuntu_environment "$env" "$sync_gateway"
     fi
@@ -350,6 +382,10 @@ function __install_syncgateway_centos() {
 function __install_syncgateway_rhel() {
     __install_syncgateway_centos "$1" "$2"
 }
+function __install_syncgateway_amazon() {
+    __install_syncgateway_centos "$1" "$2"
+}
+
 function __install_syncgateway_ubuntu() {
     local version=$1
     local tmp=$2
@@ -384,6 +420,9 @@ function __install_syncgateway() {
     elif [[ "$os" == "RHEL" ]]; then
         version=$(__findClosestVersion "$1" "${RHEL_SUPPORTED_SYNC_GATEWAY_VERSIONS[@]}")
         __install_syncgateway_rhel "$version" "$tmp"
+    elif [[ "$os" == "AMAZON" ]]; then
+        version=$(__findClosestVersion "$1" "${AMAZON_LINUX_SUPPORTED_SYNC_GATEWAY_VERSIONS[@]}")
+        __install_syncgateway_amazon "$version" "$tmp"        
     else
         version=$(__findClosestVersion "$1" "${UBUNTU_SUPPORTED_SYNC_GATEWAY_VERSIONS[@]}")
         __install_syncgateway_ubuntu "$version" "$tmp"
@@ -426,6 +465,10 @@ function __install_couchbase_centos() {
 }
 
 function __install_couchbase_rhel() {
+    __install_couchbase_centos "$1" "$2"
+}
+
+function __install_couchbase_amazon() {
     __install_couchbase_centos "$1" "$2"
 }
 
@@ -507,6 +550,9 @@ function __install_couchbase() {
             version=$(__findClosestVersion "$1" "${RHEL_6_SUPPORTED_VERSIONS[@]}")
         fi
         __install_couchbase_rhel "$version" "$tmp"
+    elif [[ "$os" == "AMAZON" ]]; then
+        version=$(__findClosestVersion "$1" "${AMAZON_LINUX_SUPPORTED_VERSIONS[@]}")
+        __install_couchbase_amazon "$version" "$tmp"
     else
         if [[ "$OS_VERSION" == "14.04" ]]; then
             version=$(__findClosestVersion "$1" "${UBUNTU_14_SUPPORTED_VERSIONS[@]}")
@@ -531,18 +577,19 @@ function __install_couchbase() {
 function __post_install_finalization() {
     __log_debug "Beginning Post Install Finalization"
     local env=$1
-    ACCESS_TOKEN=$(__get_gcp_metadata_value "instance/service-accounts/default/token" | jq -r '.access_token')
-    __log_debug "GCP Access Token:  $ACCESS_TOKEN"
-    PROJECT_ID=$(__get_gcp_metadata_value "project/project-id")
-    __log_debug "GCP Project Id: $PROJECT_ID"
-    CONFIG=$(__get_gcp_attribute_value "runtime-config-name")
-    __log_debug "GCP Config: $CONFIG"
-    SUCCESS_STATUS_PATH="$(__get_gcp_attribute_value "status-success-base-path")/$(hostname)"
-    __log_debug "GCP Success Status Path: $SUCCESS_STATUS_PATH"
-    FAILURE_STATUS_PATH="$(__get_gcp_attribute_value "status-failure-base-path")/$(hostname)"
-    __log_debug "GCP Failure Status Path: $FAILURE_STATUS_PATH"
+
 
     if [[ "$env" == "GCP" ]]; then
+        ACCESS_TOKEN=$(__get_gcp_metadata_value "instance/service-accounts/default/token" | jq -r '.access_token')
+        __log_debug "GCP Access Token:  $ACCESS_TOKEN"
+        PROJECT_ID=$(__get_gcp_metadata_value "project/project-id")
+        __log_debug "GCP Project Id: $PROJECT_ID"
+        CONFIG=$(__get_gcp_attribute_value "runtime-config-name")
+        __log_debug "GCP Config: $CONFIG"
+        SUCCESS_STATUS_PATH="$(__get_gcp_attribute_value "status-success-base-path")/$(hostname)"
+        __log_debug "GCP Success Status Path: $SUCCESS_STATUS_PATH"
+        FAILURE_STATUS_PATH="$(__get_gcp_attribute_value "status-failure-base-path")/$(hostname)"
+        __log_debug "GCP Failure Status Path: $FAILURE_STATUS_PATH"
         host=$(hostname)
         SUCCESS_PAYLOAD="$(printf '{"name": "%s", "text": "%s"}' \
         "projects/${PROJECT_ID}/configs/${CONFIG}/variables/${SUCCESS_STATUS_PATH}/${host}" \
