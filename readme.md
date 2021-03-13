@@ -26,7 +26,7 @@ Bundling:
 
 **Purpose**:  Specifies the Operating System the script is being used to install to.  
 
-**Options**: ```UBUNTU, MACOS, OSX, RHEL, CENTOS, DEBIAN```
+**Options**: ```UBUNTU, MACOS, OSX, RHEL, CENTOS, DEBIAN, AMAZON```
 
 ### ```-ch|--cluster-host```
 
