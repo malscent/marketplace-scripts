@@ -85,7 +85,11 @@ function __debian_prerequisites() {
 }
 
 function __amazon_prerequisites() {
-    __centos_prerequisites "$1"
+    local sync_gateway=$1
+    yum update -q -y
+    amazon-linux-extras install epel
+    yum install jq net-tools python2 python-pip wget -q -y
+    python2 -m pip -q install httplib2
 }
 
 function __get_gcp_metadata_value() {
