@@ -233,7 +233,7 @@ if [[ "$SYNC_GATEWAY" == 0 ]]; then
   __log_debug "CLI Installed to:  ${CLI_INSTALL_LOCATION}"
 
   __log_debug "Prior to initialization.  Let's hit the UI and make sure we get a response"
-
+  sleep 5 # There can be an issue where the installation has completed but Couchbase Server is not responsive yet.  Adding this wait to make sure we have time to get active
   LOCAL_HOST_GET=$(wget --server-response --spider "http://localhost:8091/ui/index.html" 2>&1 | awk '/^  HTTP/{a=$2} END{print a}')
   __log_debug "LOCALHOST http://localhost:8091/ui/index.html: $LOCAL_HOST_GET"
 
