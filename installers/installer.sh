@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
 CENTOS_OS_SUPPORTED_VERSIONS=("8" "7")
 CENTOS_SUPPORTED_VERSIONS=("6.5.0" "6.5.1" "6.6.0" "6.6.1")
-CENTOS_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0")
+CENTOS_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0" "2.8.2")
 DEBIAN_OS_SUPPORTED_VERSIONS=("10" "9" "8")
 DEBIAN_10_SUPPORTED_VERSIONS=("6.5.0" "6.5.1" "6.6.0" "6.6.1")
 DEBIAN_9_SUPPORTED_VERSIONS=("5.1.0" "5.1.1" "5.1.2" "5.1.3" "5.5.0" "5.5.1" "5.5.2" "5.5.3" "5.5.4" "5.5.5" "5.5.6" "6.0.0" "6.0.1" "6.0.2" "6.0.3" "6.0.4" "6.5.0" "6.5.1" "6.6.0" "6.6.1")
 DEBIAN_8_SUPPORTED_VERSIONS=("5.0.1" "5.1.0" "5.1.1" "5.1.2" "5.1.3" "5.5.0" "5.5.1" "5.5.2" "5.5.3" "5.5.4" "5.5.5" "5.5.6" "6.0.0" "6.0.1" "6.0.2" "6.0.3" "6.0.4" "6.5.0" "6.5.1" "6.6.0" "6.6.1")
-DEBIAN_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0")
+DEBIAN_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0" "2.8.2")
 RHEL_OS_SUPPORTED_VERSIONS=("8" "7" "6")
 RHEL_8_SUPPORTED_VERSIONS=("6.5.0" "6.5.1" "6.6.0" "6.6.1")
 RHEL_7_SUPPORTED_VERSIONS=("6.5.0" "6.5.1" "6.6.0" "6.6.1")
 RHEL_6_SUPPORTED_VERSIONS=("5.0.1" "5.1.0" "5.1.1" "5.1.2" "5.1.3" "5.5.0" "5.5.1" "5.5.2" "5.5.3" "5.5.4" "5.5.5" "5.5.6" "6.0.0" "6.0.1" "6.0.2" "6.0.3" "6.0.4")
-RHEL_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0")
+RHEL_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0" "2.8.2")
 UBUNTU_OS_SUPPORTED_VERSIONS=("14.04" "16.04" "18.04" "20.04")
 UBUNTU_14_SUPPORTED_VERSIONS=("5.0.1" "5.1.0" "5.1.1" "5.1.2" "5.1.3" "5.5.0" "5.5.1" "5.5.2" "5.5.3" "5.5.4" "5.5.5" "5.5.6" "6.0.0" "6.0.1")
 UBUNTU_16_SUPPORTED_VERSIONS=("5.0.1" "5.1.0" "5.1.1" "5.1.2" "5.1.3" "5.5.0" "5.5.1" "5.5.2" "5.5.3" "5.5.4" "5.5.5" "5.5.6" "6.0.0" "6.0.1" "6.0.2" "6.0.3" "6.0.4" "6.5.0" "6.5.1" "6.6.0" "6.6.1")
 UBUNTU_18_SUPPORTED_VERSIONS=("6.0.1" "6.0.2" "6.0.3" "6.0.4" "6.5.0" "6.5.1" "6.6.0" "6.6.1" "7.0.0")
 UBUNTU_20_SUPPORTED_VERSIONS=("7.0.0")
-UBUNTU_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0")
+UBUNTU_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0" "2.8.2")
 AMAZON_LINUX_OS_SUPPORTED_VERSIONS=("2")
 AMAZON_LINUX_SUPPORTED_VERSIONS=("6.5.0" "6.5.1" "6.6.0" "6.6.1")
-AMAZON_LINUX_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0")
+AMAZON_LINUX_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0" "2.8.2")
 
 function __check_os_version() {
     __log_debug "Checking OS compatability"
@@ -579,9 +579,8 @@ function __install_couchbase() {
 # This is a method to perform any final actions after the cluster has been created and/or joined
 # Precipitated because GCP requires us to send a "Success" after we're done doing our work
 function __post_install_finalization() {
-    __log_debug "Beginning Post Install Finalization"
+    __log_debug "Beginning Post Install Finalization for environment $1"
     local env=$1
-
 
     if [[ "$env" == "GCP" ]]; then
         ACCESS_TOKEN=$(__get_gcp_metadata_value "instance/service-accounts/default/token" | jq -r '.access_token')
@@ -602,17 +601,17 @@ function __post_install_finalization() {
         __log_debug "Sending success notification for startup waiter on GCP"
 
         # Notify waiter
-    wget -O - \
-         --retry-connrefused \
-         --waitretry=1 \
-         --read-timeout=10 \
-         --timeout=10 \
-         -t 5 \
-         --body-data="${SUCCESS_PAYLOAD}" \
-         --header="Authorization: Bearer ${ACCESS_TOKEN}" \
-         --header "Content-Type: application/json" \
-         --header "X-GFE-SSL: yes" \
-         --method=POST \
-         "https://runtimeconfig.googleapis.com/v1beta1/projects/${PROJECT_ID}/configs/${CONFIG}/variables"
+        wget -O - \
+            --retry-connrefused \
+            --waitretry=1 \
+            --read-timeout=10 \
+            --timeout=10 \
+            -t 5 \
+            --body-data="${SUCCESS_PAYLOAD}" \
+            --header="Authorization: Bearer ${ACCESS_TOKEN}" \
+            --header "Content-Type: application/json" \
+            --header "X-GFE-SSL: yes" \
+            --method=POST \
+            "https://runtimeconfig.googleapis.com/v1beta1/projects/${PROJECT_ID}/configs/${CONFIG}/variables"
     fi
 }
