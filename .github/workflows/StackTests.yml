@@ -49,6 +49,7 @@ jobs:
       - name: Docker containers running?
         run: docker ps
       - name: Test
-        run: docker run --network compose-files_cb-net-ubuntu appropriate/curl --retry 10  --retry-connrefused http://ubuntu-clusterhost:8091/
+        run: while ! curl http://localhost:8080; do sleep 10; done;
+        timeout-minutes: 10
       - name: Teardown
         run: docker-compose -f ./compose-files/UbuntuClusterCompose.yml down

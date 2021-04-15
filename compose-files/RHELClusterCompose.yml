@@ -12,7 +12,7 @@ services:
     networks:
       - cb-net-redhat
     container_name: redhat-clusterhost
-    command: --version 6.6.1 -u couchbase -p foo123! -ch clusterhost -d -os RHEL -r -w 3
+    command: --version 6.6.1 -u couchbase -p foo123! -ch clusterhost -d -os RHEL -r -w 3 --services data,index,query -dm 256 -im 256 -qm 256
     privileged: true
   nodeone:
     image: couchbase/redhat
@@ -25,7 +25,7 @@ services:
     ports: 
       - "8081:8091"
     container_name: redhat-node-one
-    command: --version 6.6.1 -u couchbase -p foo123! -ch redhat-clusterhost -d -os RHEL -r
+    command: --version 6.6.1 -u couchbase -p foo123! -ch redhat-clusterhost -d -os RHEL -r --services data,index,query -dm 256 -im 256 -qm 256
     privileged: true
   nodetwo:
     image: couchbase/redhat
@@ -38,7 +38,20 @@ services:
     ports: 
       - "8082:8091"
     container_name: redhat-node-two
-    command: --version 6.6.1 -u couchbase -p foo123! -ch redhat-clusterhost -d -os RHEL -r
+    command: --version 6.6.1 -u couchbase -p foo123! -ch redhat-clusterhost -d -os RHEL -r --services data,index,query,analytics,eventing,fts -dm 256 -im 256 -qm 256 -am 1024 -em 256 -sm 256
+    privileged: true
+  nocluster:
+    image: couchbase/redhat
+    hostname: 'no_cluster'
+    tty: true
+    depends_on:
+      - rallyhost
+    networks:
+      - cb-net-redhat
+    ports: 
+      - "8083:8091"
+    container_name: redhat-no-cluster
+    command: --version 6.6.1 -u couchbase -p foo123! -ch redhat-clusterhost -d -os RHEL -r --no-cluster --services data,index,query,analytics,eventing,fts -dm 256 -im 256 -qm 256 -am 1024 -em 256 -sm 256
     privileged: true
   gateway:
     image: couchbase/redhat
@@ -49,10 +62,10 @@ services:
     networks:
       - cb-net-redhat
     ports: 
-      - "8083:4985"
-      - "8084:4984"
+      - "8085:4985"
+      - "8086:4984"
     container_name: gateway
-    command: --version 2.8.0 -u couchbase -p foo123! -ch redhat-clusterhost -d -os RHEL -g -r
+    command: --version 2.8.2 -u couchbase -p foo123! -ch redhat-clusterhost -d -os RHEL -g -r
     privileged: true      
 networks:
   cb-net-redhat:
