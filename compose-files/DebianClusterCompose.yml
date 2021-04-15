@@ -12,7 +12,7 @@ services:
     networks:
       - cb-net-debian
     container_name: debian-clusterhost
-    command: --version 6.6.1 -u couchbase -p foo123! -ch clusterhost -d -os DEBIAN -r -w 3
+    command: --version 6.6.1 -u couchbase -p foo123! -ch clusterhost -d -os DEBIAN -r -w 3 --services data,index,query -dm 256 -im 256 -qm 256
     privileged: true
   nodeone:
     image: couchbase/debian
@@ -25,7 +25,7 @@ services:
     ports: 
       - "8081:8091"
     container_name: debian-node-one
-    command: --version 6.6.1 -u couchbase -p foo123! -ch debian-clusterhost -d -os DEBIAN -r
+    command: --version 6.6.1 -u couchbase -p foo123! -ch debian-clusterhost -d -os DEBIAN -r --services data,index,query -dm 256 -im 256 -qm 256
     privileged: true
   nodetwo:
     image: couchbase/debian
@@ -38,8 +38,21 @@ services:
     ports: 
       - "8082:8091"
     container_name: debian-node-two
-    command: --version 6.6.1 -u couchbase -p foo123! -ch debian-clusterhost -d -os DEBIAN -r
+    command: --version 6.6.1 -u couchbase -p foo123! -ch debian-clusterhost -d -os DEBIAN -r --services data,index,query,analytics,eventing,fts -dm 256 -im 256 -qm 256 -am 1024 -em 256 -sm 256
     privileged: true
+  nocluster:
+    image: couchbase/debian
+    hostname: 'no_cluster'
+    tty: true
+    depends_on:
+      - rallyhost
+    networks:
+      - cb-net-debian
+    ports: 
+      - "8083:8091"
+    container_name: debian-no-cluster
+    command: --version 6.6.1 -u couchbase -p foo123! -ch debian-clusterhost -d -os DEBIAN -r --no-cluster --services data,index,query,analytics,eventing,fts -dm 256 -im 256 -qm 256 -am 1024 -em 256 -sm 256
+    privileged: true    
   gateway:
     image: couchbase/debian
     hostname: 'gateway'
@@ -49,10 +62,10 @@ services:
     networks:
       - cb-net-debian
     ports: 
-      - "8083:4985"
-      - "8084:4984"
+      - "8085:4985"
+      - "8086:4984"
     container_name: gateway
-    command: --version 2.8.0 -u couchbase -p foo123! -ch debian-clusterhost -d -os DEBIAN -g -r
+    command: --version 2.8.2 -u couchbase -p foo123! -ch debian-clusterhost -d -os DEBIAN -g -r
     privileged: true      
 networks:
   cb-net-debian:

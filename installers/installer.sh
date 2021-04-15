@@ -1,26 +1,4 @@
 #!/usr/bin/env bash
-CENTOS_OS_SUPPORTED_VERSIONS=("8" "7")
-CENTOS_SUPPORTED_VERSIONS=("6.5.0" "6.5.1" "6.6.0" "6.6.1")
-CENTOS_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0" "2.8.2")
-DEBIAN_OS_SUPPORTED_VERSIONS=("10" "9" "8")
-DEBIAN_10_SUPPORTED_VERSIONS=("6.5.0" "6.5.1" "6.6.0" "6.6.1")
-DEBIAN_9_SUPPORTED_VERSIONS=("5.1.0" "5.1.1" "5.1.2" "5.1.3" "5.5.0" "5.5.1" "5.5.2" "5.5.3" "5.5.4" "5.5.5" "5.5.6" "6.0.0" "6.0.1" "6.0.2" "6.0.3" "6.0.4" "6.5.0" "6.5.1" "6.6.0" "6.6.1")
-DEBIAN_8_SUPPORTED_VERSIONS=("5.0.1" "5.1.0" "5.1.1" "5.1.2" "5.1.3" "5.5.0" "5.5.1" "5.5.2" "5.5.3" "5.5.4" "5.5.5" "5.5.6" "6.0.0" "6.0.1" "6.0.2" "6.0.3" "6.0.4" "6.5.0" "6.5.1" "6.6.0" "6.6.1")
-DEBIAN_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0" "2.8.2")
-RHEL_OS_SUPPORTED_VERSIONS=("8" "7" "6")
-RHEL_8_SUPPORTED_VERSIONS=("6.5.0" "6.5.1" "6.6.0" "6.6.1")
-RHEL_7_SUPPORTED_VERSIONS=("6.5.0" "6.5.1" "6.6.0" "6.6.1")
-RHEL_6_SUPPORTED_VERSIONS=("5.0.1" "5.1.0" "5.1.1" "5.1.2" "5.1.3" "5.5.0" "5.5.1" "5.5.2" "5.5.3" "5.5.4" "5.5.5" "5.5.6" "6.0.0" "6.0.1" "6.0.2" "6.0.3" "6.0.4")
-RHEL_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0" "2.8.2")
-UBUNTU_OS_SUPPORTED_VERSIONS=("14.04" "16.04" "18.04" "20.04")
-UBUNTU_14_SUPPORTED_VERSIONS=("5.0.1" "5.1.0" "5.1.1" "5.1.2" "5.1.3" "5.5.0" "5.5.1" "5.5.2" "5.5.3" "5.5.4" "5.5.5" "5.5.6" "6.0.0" "6.0.1")
-UBUNTU_16_SUPPORTED_VERSIONS=("5.0.1" "5.1.0" "5.1.1" "5.1.2" "5.1.3" "5.5.0" "5.5.1" "5.5.2" "5.5.3" "5.5.4" "5.5.5" "5.5.6" "6.0.0" "6.0.1" "6.0.2" "6.0.3" "6.0.4" "6.5.0" "6.5.1" "6.6.0" "6.6.1")
-UBUNTU_18_SUPPORTED_VERSIONS=("6.0.1" "6.0.2" "6.0.3" "6.0.4" "6.5.0" "6.5.1" "6.6.0" "6.6.1" "7.0.0")
-UBUNTU_20_SUPPORTED_VERSIONS=("7.0.0")
-UBUNTU_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0" "2.8.2")
-AMAZON_LINUX_OS_SUPPORTED_VERSIONS=("2")
-AMAZON_LINUX_SUPPORTED_VERSIONS=("6.5.0" "6.5.1" "6.6.0" "6.6.1")
-AMAZON_LINUX_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0" "2.8.2")
 
 function __check_os_version() {
     __log_debug "Checking OS compatability"
@@ -28,25 +6,25 @@ function __check_os_version() {
     SUPPORTED_VERSIONS=("UNKNOWN")
     os=$1
     if [[ "$os" == "CENTOS" ]]; then
-        OS_VERSION=$(awk '/^VERSION_ID=/{print $1}' /etc/os-release | awk -F"=" '{print $2}' | sed -e 's/^"//' -e 's/"$//')
+        OS_VERSION=$(awk '/^VERSION_ID=/{print $1}' /etc/os-release | awk -F"=" '{print $2}' | sed -e 's/^"//' -e 's/"//' | cut -c1-1)
         SUPPORTED_VERSIONS=("${CENTOS_OS_SUPPORTED_VERSIONS[*]}")
     elif [[ "$os" == "DEBIAN" ]]; then
         OS_VERSION=$(awk 'NR==1{print $3}' /etc/issue)
         SUPPORTED_VERSIONS=("${DEBIAN_OS_SUPPORTED_VERSIONS[*]}")
     elif [[ "$os" == "RHEL" ]]; then
-        OS_VERSION=$(awk '/^VERSION_ID=/{print $1}' /etc/os-release | awk -F"=" '{print $2}' | sed -e 's/^"//' -e 's/"$//')
+        OS_VERSION=$(awk '/^VERSION_ID=/{print $1}' /etc/os-release | awk -F"=" '{print $2}' | sed -e 's/^"//' -e 's/"//' | cut -c1-1)
         SUPPORTED_VERSIONS=("${RHEL_OS_SUPPORTED_VERSIONS[*]}")
     elif [[ "$os" == "AMAZON" ]]; then
         OS_VERSION=$(awk '/^VERSION_ID=/{print $1}' /etc/os-release | awk -F"=" '{print $2}' | sed -e 's/^"//' -e 's/"$//')
-        SUPPORTED_VERSIONS=($"${AMAZON_LINUX_OS_SUPPORTED_VERSIONS[*]}")
+        SUPPORTED_VERSIONS=("${AMAZON_LINUX_OS_SUPPORTED_VERSIONS[*]}")
     else
         OS_VERSION=$(awk 'NR==1{print $2}' /etc/issue | cut -c-5)
-        SUPPORTED_VERSIONS=("${UBUNTU_OS_SUPPORTED_VERSIONS[@]}")
+        SUPPORTED_VERSIONS=("${UBUNTU_OS_SUPPORTED_VERSIONS[*]}")
     fi
-    __log_debug "OS version is: ${OS_VERSION}"
+    __log_debug "OS version is: '${OS_VERSION}'"
     __log_debug "Supported Versions are: ${SUPPORTED_VERSIONS[*]}"
     supported=$(__elementIn "$OS_VERSION" "${SUPPORTED_VERSIONS[@]}")
-    if [[ "$supported" == 1 ]]; then
+    if [[ "$supported" == 0 ]]; then
         __log_error "This version of ${os} is not supported by Couchbase Server Enterprise Edition."
         exit 1
     fi
@@ -77,7 +55,15 @@ function __ubuntu_prerequisites() {
 }
 
 function __rhel_prerequisites() {
-    __centos_prerequisites "$1"
+    local sync_gateway=$1
+    yum update -q -y
+    if [[ "$OS_VERSION" == 8* ]]; then
+        yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm -q -y
+    else
+        yum install epel-release -q -y
+    fi
+    yum install jq net-tools python2 wget -q -y
+    python2 -m pip -q install httplib2
 }
 
 function __debian_prerequisites() {
