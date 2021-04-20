@@ -13,6 +13,8 @@ Bundling:
 
 ```bash_bundler bundle -e ./main.sh -o ./build/couchbase_installer.sh```
 
+This project uses [BATS](https://bats-core.readthedocs.io/en/latest/) for unit tests.  
+
 ## Parameters
 
 ### ```-v|--version```
@@ -89,6 +91,48 @@ Bundling:
 **Usage**: ```./main.sh -w 5
 
 **Purpose**: Specifies that the script should not report success until it sees N nodes in the cluster.  This is used for GCP notifications on completion
+
+### ```-n|--no-cluster```
+
+**Usage**: ```./main.sh -n 
+
+**Purpose**: Specifies that in a Couchbase Server installation, it should not take any actions to cluster the server after installing couchbase
+
+### ```-dm|--data-memory```
+
+**Usage**: ```./main.sh -dm 50MiB
+
+**Purpose**: Specifies the amount of memory to allocate to the data service within the cluster.  Values can be MiB, GiB or TiB. No suffix will result in MiB. Defaults to 50% of the available memory.
+
+### ```-im|--index-memory```
+
+**Usage**: ```./main.sh -im 15MiB
+
+**Purpose**: Specifies the amount of memory to allocate to the index service within the cluster.  Values can be MiB, GiB or TiB. No suffix will result in MiB. Defaults to 15% of the available memory.
+
+### ```-em|--eventing-memory```
+
+**Usage**: ```./main.sh -em 5MiB
+
+**Purpose**: Specifies the amount of memory to allocate to the eventing service within the cluster.  Values can be MiB, GiB or TiB. No suffix will result in MiB. Defaults to 256MiB.
+
+### ```-sm|--search-memory```
+
+**Usage**: ```./main.sh -fm 15MiB
+
+**Purpose**: Specifies the amount of memory to allocate to the search service within the cluster.  Values can be MiB, GiB or TiB. No suffix will result in MiB. Defaults to 256MiB.
+
+### ```-am|--analytics-memory```
+
+**Usage**: ```./main.sh -am 1GiB
+
+**Purpose**: Specifies the amount of memory to allocate to the query service within the cluster.  Values can be MiB, GiB or TiB. No suffix will result in MiB. Defaults to 1GiB.
+
+### ```-sv|--services```
+
+**Usage**: ```./main.sh --services data,fts,index,query,eventing,analytics
+
+**Purpose**: Specifies the services that will be enabled on the Couchbase server
 
 ### ```-h|--help```
 

@@ -18,7 +18,7 @@ function __elementIn() {
     local e match
     match=$(echo "$1" | tr '[:lower:]' '[:upper:]')
     shift
-    for e; do [[ "${e}" = "${match}" ]] && echo 0 && return; done
+    for e; do [[ "$(__toUpper "${e}")" = "${match}" ]] && echo 0 && return; done
     echo 1
 }
 
@@ -57,7 +57,7 @@ function __compareVersions() {
         fi
         if ((10#${ver1[i]} < 10#${ver2[i]}))
         then
-            echo 2
+            echo -1
             return
         fi
     done
@@ -84,7 +84,7 @@ function __findClosestVersion() {
     for i in "${compatibleVersions[@]}"; do
         comparison=$(__compareVersions "$requestedVersion" "$i")
         selectedComparison=$(__compareVersions "$selectedVersion" "$i")
-        if [[ "$comparison" == "1" && "$selectedComparison" == "2" ]]; then
+        if [[ "$comparison" == "1" && "$selectedComparison" == "-1" ]]; then
             # our selected version is greater than the requested so we go with it
             selectedVersion=$i
 
@@ -93,4 +93,100 @@ function __findClosestVersion() {
     
     echo "$selectedVersion"
     return
+}
+
+function __getTotalRam() {
+    # check for free, which is part of gnu core-utils which is 
+    # present on almost every distro, but not macOS
+    if which free > /dev/null; then
+        free --mebi | awk 'NR==2{print $2}'
+        return
+    fi
+    # here we grab the memsize in bytes then convert to MiB
+    # this works on macOS - Big Sur
+    size=$(sysctl hw.memsize | cut -d ' ' -f 2)
+    echo $((size / 1024 / 1024))
+    return
+}
+
+function __convertToMiB() {
+    local value
+    value=$(__toUpper "${1}")
+    local default=0
+    if [ -n "$2" ]; then
+        default=$(__convertToMiB "$2")
+    fi
+    local gib=0
+    local tib=0
+    local totalRAM=0
+    totalRAM=$(__getTotalRam)
+    # for suffixes TiB, TIB, or tib
+    if [[ "$value" == *TIB ]]; then
+        gib=1
+        tib=1
+        value="${value%TIB}"
+    fi
+    # for suffixes TI, Ti, or ti
+    if [[ "$value" == *TI ]]; then
+        gib=1
+        tib=1
+        value="${value%TI}"
+
+    fi
+    # for suffixes GiB or GIB or gib
+    if [[ "$value" == *GIB ]]; then
+        gib=1
+        value="${value%GIB}"
+    fi
+    # for suffixes GI or Gi or gi
+    if [[ "$value" == *GI ]]; then
+        gib=1
+        value="${value%GI}"
+    fi
+    # for suffixes of MIB, MiB, mIB, miB or mib
+    if [[ "$value" == *MIB ]]; then
+        value="${value%MIB}"
+    fi
+    # for suffixes off MI, mI, Mi, or mi
+    if [[ "$value" == *MI ]]; then
+        value="${value%MI}"
+    fi
+    # confirm it's actually a number after we strip the suffix
+    if ! [[ "$value" =~ ^[0-9]+$ ]]; then
+        echo "$default"
+        return 0
+    fi
+    # If it's a tib, we need to convert to GiB for next conversion
+    if [[ "$tib" == "1" ]]; then
+        value=$((value * 1024))
+    fi
+    # if it's a gib, we need to swap it over to MiB
+    if [[ "$gib" == "1" ]]; then
+        value=$((value * 1024))
+    fi
+    # If our value is greater than the total ram, we return default
+    if [[ $value -gt $totalRAM ]]; then
+        echo "$default"
+    else
+        echo "$value"
+    fi
+    return 0
+}
+
+function __allExists {
+    local oifs=$IFS
+    needles=()
+    IFS="," read -r -a needles <<< "$1"
+    IFS=$oifs
+    shift
+    haystack=("$@")
+    for x in "${needles[@]}"
+    do
+        output=$(__elementIn "$x" "${haystack[@]}")
+        if [[ "$output" == "1" ]]; then
+            echo "$output"
+            return 1
+        fi
+    done
+    return 0
 }

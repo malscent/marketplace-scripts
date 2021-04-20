@@ -13,34 +13,19 @@ source './common/loggers.sh'
 # shellcheck source=common/utils.sh
 source './common/utils.sh'
 # shellcheck disable=SC1091
+# shellcheck source=common/constants.sh
+source "./common/constants.sh"
+# shellcheck disable=SC1091
 # shellcheck source=common/help.sh
 source './common/help.sh'
 # shellcheck disable=SC1091
 # shellcheck source=installers.installer.sh
 source "./installers/installer.sh"
 
+
 # Print header
 print_header
 
-
-#initialize help variable
-HELP=0
-
-
-#initialize variables
-VERSION="6.6.1"
-OS="UBUNTU"
-AVAILABLE_OS_VALUES=("UBUNTU" "RHEL" "CENTOS" "DEBIAN" "AMAZON")
-ENV="OTHER"
-AVAILABLE_ENV_VALUES=("AZURE" "AWS" "GCP" "DOCKER" "KUBERNETES" "OTHER")
-DEFAULT_USERNAME="couchbase"
-DEFAULT_PASSWORD=$(__generate_random_string)
-CB_USERNAME=$DEFAULT_USERNAME
-CB_PASSWORD=$DEFAULT_PASSWORD
-DAEMON=0
-STARTUP=0
-SYNC_GATEWAY=0
-WAIT=0
 
 # Here we're setting up a handler for unexpected errors during operations
 function handle_exit() {
@@ -150,6 +135,64 @@ case $key in
         exit 1
       fi; #past argment
     ;;
+    -n|--no-cluster)
+      NO_CLUSTER=1
+      shift
+    ;;
+    -sv|--services)
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ] && __allExists "$2" "${DEFAULT_SERVICES[@]}" ; then
+        SERVICES=$2
+        shift 2
+      else
+        __log_error "Error: Argument for $1 is missing, or incorrect" >&2
+        exit 1
+      fi;
+    ;;
+    -sm|--search-memory)
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
+      SEARCH_QUOTA=$(__convertToMiB "$2" "$SEARCH_QUOTA")
+        shift 2
+      else
+        __log_error "Error: Argument for $1 is missing, or incorrect" >&2
+        exit 1
+      fi;
+    ;;
+    -am|--analytics-memory)
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
+        ANALYTICS_QUOTA=$(__convertToMiB "$2" "$ANALYTICS_QUOTA")
+        shift 2
+      else
+        __log_error "Error: Argument for $1 is missing, or incorrect" >&2
+        exit 1
+      fi;
+    ;;
+    -em|--eventing-memory)
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
+        EVENTING_QUOTA=$(__convertToMiB "$2" "$EVENTING_QUOTA")
+        shift 2
+      else
+        __log_error "Error: Argument for $1 is missing, or incorrect" >&2
+        exit 1
+      fi;
+    ;;
+    -im|--index-memory)
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
+        INDEX_QUOTA=$(__convertToMiB "$2" "$INDEX_QUOTA")
+        shift 2
+      else
+        __log_error "Error: Argument for $1 is missing, or incorrect" >&2
+        exit 1
+      fi;
+    ;;
+    -dm|--data-memory)
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
+        DATA_QUOTA=$(__convertToMiB "$2" "$DATA_QUOTA")
+        shift 2
+      else
+        __log_error "Error: Argument for $1 is missing, or incorrect" >&2
+        exit 1
+      fi;
+    ;;
     -h|--help)
     HELP=1
     shift # past argument
@@ -170,8 +213,10 @@ __log_info "Installing Couchbase Version ${VERSION}"
 __log_info "Beginning execution"
 __log_info "Installing on OS: ${OS}"
 __log_info "Configuring for Environment: ${ENV}"
-
-
+if [[ "$SYNC_GATEWAY" != "1" ]]; then
+  __log_info "Services to be intialized: $SERVICES"
+  __log_info "Memory Quotas - Data: $DATA_QUOTA, Index: $INDEX_QUOTA, Analytics: $ANALYTICS_QUOTA, Eventing: $EVENTING_QUOTA, Search: $SEARCH_QUOTA"
+fi
 if [[ "$STARTUP" == "1" ]]; then
   __log_info "Checking for Couchbase Server Install"
   if [ -d "/opt/couchbase" ]; then
@@ -195,7 +240,6 @@ else
 fi
 __log_debug "Hostname:  ${HOST}"
 __log_debug "Local IP: ${LOCAL_IP}"
-DO_CLUSTER=0
 
 # Check if host is cluster host, or local ip, or if the clusterhost contains the host for FQDN on GCP
 if [[ "$CLUSTER_HOST" == "$HOST" ]] || 
@@ -206,7 +250,7 @@ if [[ "$CLUSTER_HOST" == "$HOST" ]] ||
     DO_CLUSTER=1
 fi
 
-if [[ "$SYNC_GATEWAY" == 1 ]]; then
+if [[ "$SYNC_GATEWAY" == 1 ]] || [[ "$NO_CLUSTER" == 1 ]]; then
     DO_CLUSTER=0
 fi
 
@@ -270,40 +314,35 @@ if [[ "$SYNC_GATEWAY" == 0 ]]; then
 
 fi
 
-
-
-
-
 if [[ $DO_CLUSTER == 1 ]]
 then
-  totalRAM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-  dataRAM=$((50 * totalRAM / 100000))
-  indexRAM=$((15 * totalRAM / 100000))
-
   __log_debug "Running couchbase-cli cluster-init"
   result=$(./couchbase-cli cluster-init \
     --cluster="$CLUSTER_HOST" \
-    --cluster-ramsize=$dataRAM \
-    --cluster-index-ramsize=$indexRAM \
+    --cluster-ramsize="$DATA_QUOTA" \
+    --cluster-index-ramsize="$INDEX_QUOTA" \
+    --cluster-fts-ramsize="$SEARCH_QUOTA" \
+    --cluster-eventing-ramsize="$EVENTING_QUOTA" \
+    --cluster-analytics-ramsize="$ANALYTICS_QUOTA" \
     --cluster-username="$CB_USERNAME" \
     --cluster-password="$CB_PASSWORD" \
-    --services=data,index,query,fts) || __log_error "Error during Cluster Initialization"
+    --services="$SERVICES") || __log_error "Error during Cluster Initialization"
 __log_debug "cluster-init result: \'$result\'"
-elif [[ $SYNC_GATEWAY == 0 ]]; 
+elif [[ $SYNC_GATEWAY == 0 ]] && [[ $NO_CLUSTER == 0 ]]; 
 then
   __log_debug "Running couchbase-cli server-add"
   output=""
   while [[ $output != "Server $LOCAL_IP:8091 added" && $output != *"Node is already part of cluster."* ]]
   do
     __log_debug "In server add loop"
-    if ./couchbase-cli server-add \
+    if output=$(./couchbase-cli server-add \
       --cluster="$CLUSTER_HOST" \
       --username="$CB_USERNAME" \
       --password="$CB_PASSWORD" \
       --server-add="$LOCAL_IP" \
       --server-add-username="$CB_USERNAME" \
       --server-add-password="$CB_PASSWORD" \
-      --services=data,index,query,fts; then
+      --services="$SERVICES" 2>&1); then
       output="Server $LOCAL_IP:8091 added"
     else
       __log_error "Error during Server Add"
