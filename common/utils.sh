@@ -15,10 +15,33 @@ error_exit() {
 
 # Checks to see if a value is contained by an array
 function __elementIn() {
-    local e match
-    match=$(echo "$1" | tr '[:lower:]' '[:upper:]')
-    shift
-    for e; do [[ "$(__toUpper "${e}")" = "${match}" ]] && echo 0 && return; done
+    local match
+    match=$(echo "$1" | tr '[:lower:]' '[:upper:]' | xargs)
+    shift 1
+    if [ "$#" == "1" ]; then
+        new=$(echo "$1" | tr '[:lower:]' '[:upper:]' | xargs)
+        case "$match" in
+            "$new" ) echo "0" && return
+        esac
+    fi
+    while (( "$#" )); do
+            new=$(echo "$1" | tr '[:lower:]' '[:upper:]' | xargs)
+            case "$match" in
+                "$new" ) echo "0" && return
+            esac
+        shift
+    done
+    #echo "${arr[*]}"
+    # for e in "${arr[@]}"; do
+    #     new=$(echo "$e" | tr '[:lower:]' '[:upper:]' | xargs)
+    #     case "$match" in
+    #         "$new" ) echo "0" && return
+    #     esac
+    #     if [ "${new}" = "${match}" ]; then 
+    #         echo "0"
+    #         return
+    #     fi
+    # done
     echo 1
 }
 
@@ -66,7 +89,7 @@ function __compareVersions() {
 }
 
 function __findClosestVersion() {
-    local e requestedVersion=$1
+    local requestedVersion=$1
     shift
     compatibleVersions=( "$@" )
     if [[ ! "${requestedVersion}" =~  ^[0-9]{1,2}.[0-9]{1,2}.[0-9]{1,2}$ ]]; then

@@ -22,6 +22,13 @@ setup() {
     assert [ "$var" == 0 ]
 }
 
+@test "elementIn return 0 if value is present and only item" {
+    values=("2")
+    run __elementIn "2" "${values[@]}"
+    assert_output "0"
+    assert_success
+}
+
 @test "finds value not case sensitive on needle" {
     cities=("CHICAGO" "LONDON" "PARIS" "NEW YORK" "SAN FRANCISCO")
     city="paris"
@@ -31,8 +38,10 @@ setup() {
 
 @test "Works with ubuntu versions" {
     SUPPORTED_VERSIONS=("14.04" "16.04" "18.04" "20.04")
+    NEW_SUPPORTED_VERSIONS=("${SUPPORTED_VERSIONS[@]}")
+
     OS_VERSION="18.04"
-    run __elementIn "$OS_VERSION" "${SUPPORTED_VERSIONS[@]}"
+    run __elementIn "$OS_VERSION" "${NEW_SUPPORTED_VERSIONS[@]}"
     assert_success
     assert_output "0"
 }
@@ -190,3 +199,4 @@ setup() {
     run __allExists "PARIS,LONDON,CHICAGO,SANTIAGO" "${cities[@]}"
     assert_failure
 }
+
