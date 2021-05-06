@@ -99,7 +99,8 @@ function __getTotalRam() {
     # check for free, which is part of gnu core-utils which is 
     # present on almost every distro, but not macOS
     if which free > /dev/null; then
-        free --mebi | awk 'NR==2{print $2}'
+        # not all free versions support --mebi but the ones that don't support -m and require --si for megabytes
+        free -m | awk 'NR==2{print $2}'
         return
     fi
     # here we grab the memsize in bytes then convert to MiB
