@@ -31,17 +31,6 @@ function __elementIn() {
             esac
         shift
     done
-    #echo "${arr[*]}"
-    # for e in "${arr[@]}"; do
-    #     new=$(echo "$e" | tr '[:lower:]' '[:upper:]' | xargs)
-    #     case "$match" in
-    #         "$new" ) echo "0" && return
-    #     esac
-    #     if [ "${new}" = "${match}" ]; then 
-    #         echo "0"
-    #         return
-    #     fi
-    # done
     echo 1
 }
 
