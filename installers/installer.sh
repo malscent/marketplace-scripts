@@ -7,24 +7,25 @@ function __check_os_version() {
     os=$1
     if [[ "$os" == "CENTOS" ]]; then
         OS_VERSION=$(awk '/^VERSION_ID=/{print $1}' /etc/os-release | awk -F"=" '{print $2}' | sed -e 's/^"//' -e 's/"//' | cut -c1-1)
-        SUPPORTED_VERSIONS=("${CENTOS_OS_SUPPORTED_VERSIONS[*]}")
+        SUPPORTED_VERSIONS=("${CENTOS_OS_SUPPORTED_VERSIONS[@]}")
     elif [[ "$os" == "DEBIAN" ]]; then
         OS_VERSION=$(awk 'NR==1{print $3}' /etc/issue)
-        SUPPORTED_VERSIONS=("${DEBIAN_OS_SUPPORTED_VERSIONS[*]}")
+        SUPPORTED_VERSIONS=("${DEBIAN_OS_SUPPORTED_VERSIONS[@]}")
     elif [[ "$os" == "RHEL" ]]; then
         OS_VERSION=$(awk '/^VERSION_ID=/{print $1}' /etc/os-release | awk -F"=" '{print $2}' | sed -e 's/^"//' -e 's/"//' | cut -c1-1)
-        SUPPORTED_VERSIONS=("${RHEL_OS_SUPPORTED_VERSIONS[*]}")
+        SUPPORTED_VERSIONS=("${RHEL_OS_SUPPORTED_VERSIONS[@]}")
     elif [[ "$os" == "AMAZON" ]]; then
         OS_VERSION=$(awk '/^VERSION_ID=/{print $1}' /etc/os-release | awk -F"=" '{print $2}' | sed -e 's/^"//' -e 's/"$//')
-        SUPPORTED_VERSIONS=("${AMAZON_LINUX_OS_SUPPORTED_VERSIONS[*]}")
+        SUPPORTED_VERSIONS=("${AMAZON_LINUX_OS_SUPPORTED_VERSIONS[@]}")
     else
         OS_VERSION=$(awk 'NR==1{print $2}' /etc/issue | cut -c-5)
-        SUPPORTED_VERSIONS=("${UBUNTU_OS_SUPPORTED_VERSIONS[*]}")
+        SUPPORTED_VERSIONS=("${UBUNTU_OS_SUPPORTED_VERSIONS[@]}")
     fi
     __log_debug "OS version is: '${OS_VERSION}'"
     __log_debug "Supported Versions are: ${SUPPORTED_VERSIONS[*]}"
-    supported=$(__elementIn "$OS_VERSION" "${SUPPORTED_VERSIONS[@]}")
-    if [[ "$supported" == 0 ]]; then
+    supported=$(__elementIn "${OS_VERSION}" "${SUPPORTED_VERSIONS[@]}")
+    __log_debug "Is supported: $supported"
+    if [[ "$supported" == "1" ]]; then
         __log_error "This version of ${os} is not supported by Couchbase Server Enterprise Edition."
         exit 1
     fi
