@@ -261,10 +261,17 @@ function __formatDataDisk ()
         mkfs -t ext4 ${DEVICE}
         LINE="${DEVICE}\t${MOUNTPOINT}\text4\tdefaults,nofail\t0\t2"
         echo -e ${LINE} >> /etc/fstab
+        cat /etc/fstab
+        __log_debug "Creating mountpoint: $MOUNTPOINT"
         mkdir $MOUNTPOINT
         mount -a
-        chown couchbase $MOUNTPOINT
-        chgrp couchbase $MOUNTPOINT
+        __log_debug "Changing ownership of $MOUNTPOINT"
+        chown couchbase $MOUNTPOINT -v
+        __log_debug "Changing group of $MOUNTPOINT"
+        chgrp couchbase $MOUNTPOINT -v
+        __log_debug "Symbolic link logs directory to data disk"
+        mkdir "$MOUNTPOINT/logs"
+        ln -s "$MOUNTPOINT/logs" /opt/couchbase/var/lib/couchbase/logs
     fi
 
     if [[ "$env" == "AZURE" && "$sync_gateway" -eq "0" ]]; then
