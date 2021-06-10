@@ -309,6 +309,8 @@ if [[ "$SYNC_GATEWAY" == 0 ]]; then
     --node-init-hostname="${LOCAL_IP}" \
     --node-init-data-path="${DISK_PATH}/data" \
     --node-init-index-path="${DISK_PATH}/index" \
+    --node-init-analytics-path="${DISK_PATH}/data" \
+    --node-init-eventing-path="${DISK_PATH}/data" \
     --username="$CB_USERNAME" \
     --password="$CB_PASSWORD") || __log_error "Error during Node Initialization"
   __log_debug "node-init result: \'$resval\'"
