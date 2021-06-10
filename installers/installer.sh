@@ -166,7 +166,7 @@ function __install_prerequisites() {
 
 
 # https://docs.couchbase.com/server/current/install/thp-disable.html
-turnOffTransparentHugepages ()
+function __turnOffTransparentHugepages ()
 {
     local os=$1
     __log_debug "Disabling Transparent Hugepages"
@@ -222,7 +222,7 @@ esac
     __log_debug "Transparent Hugepages have been disabled."
 }
 
-adjustTCPKeepalive ()
+function __adjustTCPKeepalive ()
 {
 # Azure public IPs have some odd keep alive behaviour
 # A summary is available here https://docs.mongodb.org/ecosystem/platforms/windows-azure/
@@ -238,7 +238,18 @@ adjustTCPKeepalive ()
 
 }
 
-formatDataDisk ()
+function __get_datadisk()
+{
+    local env=$1
+    # AWS is /mnt/datadisk whereas azure and gcp are /datadisk
+    if [[ "$env" == "AWS" ]]; then
+        echo "/mnt/datadisk"
+    else 
+        echo "/datadisk"
+    fi
+}
+
+function __formatDataDisk ()
 {
     local os=$1
     local env=$2
@@ -294,7 +305,7 @@ formatDataDisk ()
     fi
 }
 
-setSwappiness()
+function __setSwappiness()
 {
     KERNEL_VERSION=$(uname -r)
     RET=$(__compareVersions "$KERNEL_VERSION" "3.5.0")
@@ -340,10 +351,10 @@ function __configure_environment() {
     local os=$2
     local sync_gateway=$3
     __log_debug "Setting up for environment: ${env}"
-    turnOffTransparentHugepages "$os" "$env" "$sync_gateway"
-    setSwappiness "$os" "$env" "$sync_gateway"
-    adjustTCPKeepalive "$os" "$env" "$sync_gateway"
-    formatDataDisk "$os" "$env" "$sync_gateway"
+    __turnOffTransparentHugepages "$os" "$env" "$sync_gateway"
+    __setSwappiness "$os" "$env" "$sync_gateway"
+    __adjustTCPKeepalive "$os" "$env" "$sync_gateway"
+    __formatDataDisk "$os" "$env" "$sync_gateway"
     if [[ "$os" == "CENTOS" ]]; then
         __centos_environment "$env" "$sync_gateway"
     elif [[ "$os" == "DEBIAN" ]]; then
