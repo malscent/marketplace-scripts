@@ -302,12 +302,13 @@ if [[ "$SYNC_GATEWAY" == 0 ]]; then
 
   cd "${CLI_INSTALL_LOCATION}"
 
-  __log_debug "Node intialization"
+  DISK_PATH=$(__get_datadisk "$ENV")
+  __log_debug "Node intialization with disk path $DISK_PATH"
   resval=$(./couchbase-cli node-init \
     --cluster="${LOCAL_IP}" \
     --node-init-hostname="${LOCAL_IP}" \
-    --node-init-data-path=/datadisk/data \
-    --node-init-index-path=/datadisk/index \
+    --node-init-data-path="${DISK_PATH}/data" \
+    --node-init-index-path="${DISK_PATH}/index" \
     --username="$CB_USERNAME" \
     --password="$CB_PASSWORD") || __log_error "Error during Node Initialization"
   __log_debug "node-init result: \'$resval\'"
