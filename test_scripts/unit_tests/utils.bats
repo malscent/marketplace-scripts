@@ -110,6 +110,12 @@ setup() {
     assert_output --partial "Apple is not in the correct version format."
 }
 
+@test "works on beta version" {
+    UBUNTU_SUPPORTED_SYNC_GATEWAY_VERSIONS=("1.5.1" "1.5.2" "2.0.0" "2.1.0" "2.1.1" "2.1.2" "2.1.3" "2.5.0" "2.5.1" "2.6.0" "2.6.1" "2.7.0" "2.7.1" "2.7.2" "2.7.3" "2.7.4" "2.8.0" "2.8.2" "7.0.0-beta")
+    output=$(__findClosestVersion "7.0.0-beta" "${UBUNTU_SUPPORTED_SYNC_GATEWAY_VERSIONS[@]}")
+    assert [ "$output" == "7.0.0-beta" ]
+}
+
 @test "Gets total ram" {
     run __getTotalRam
     assert_success

@@ -81,16 +81,20 @@ function __findClosestVersion() {
     local requestedVersion=$1
     shift
     compatibleVersions=( "$@" )
-    if [[ ! "${requestedVersion}" =~  ^[0-9]{1,2}.[0-9]{1,2}.[0-9]{1,2}$ ]]; then
-        __log_error "${requestedVersion} is not in the correct version format."
-        return 1
-    fi
+    # moved check to see if version exists first for situations where 
+    # the version (e.g. 7.0.0-beta) don't fit the standard version format
     local contained
     contained=$(__elementIn "${requestedVersion}" "$@")
     if [[ "$contained" == "0" ]]; then 
         echo "${requestedVersion}"
         return
     fi
+    
+    if [[ ! "${requestedVersion}" =~  ^[0-9]{1,2}.[0-9]{1,2}.[0-9]{1,2}$ ]]; then
+        __log_error "${requestedVersion} is not in the correct version format."
+        return 1
+    fi
+
 
     selectedVersion="${compatibleVersions[0]}"
     for i in "${compatibleVersions[@]}"; do
