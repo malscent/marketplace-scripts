@@ -353,7 +353,7 @@ function __amazon_environment() {
 }
 
 function __configure_environment() {
-    echo "Setting up Environment"
+    __log_debug "Setting up Environment"
     local env=$1
     local os=$2
     local sync_gateway=$3
@@ -466,11 +466,14 @@ function __install_couchbase_centos() {
     local tmp=$2
     __log_info "Installing Couchbase Server v${version}..."
     __log_debug "Downloading installer to: ${tmp}"
-    wget -O "${tmp}/couchbase-release-1.0-x86_64.rpm" https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-x86_64.rpm -q
-    __log_debug "Download Complete.  Beginning Unpacking"
-    rpm -i "${tmp}/couchbase-release-1.0-x86_64.rpm"
-    __log_debug "Unpacking complete.  Beginning Installation"
-    yum install "couchbase-server-${version}" -y -q
+    # example urls pulled from the couchbase.com website
+    #https://packages.couchbase.com/releases/7.0.0-beta/couchbase-server-enterprise-7.0.0-beta-centos8.x86_64.rpm
+    #https://packages.couchbase.com/releases/6.6.2/couchbase-server-enterprise-6.6.2-centos8.x86_64.rpm
+    #https://packages.couchbase.com/releases/6.6.2/couchbase-server-enterprise-6.6.2-centos7.x86_64.rpm
+    wget -O "${tmp}/couchbase-server-enterprise-${version}-centos${OS_VERSION}.x86_64.rpm" \
+    "https://packages.couchbase.com/releases/${version}/couchbase-server-enterprise-${version}-centos${OS_VERSION}.x86_64.rpm" -q
+    __log_debug "Beginning Installation"
+    yum install "${tmp}/couchbase-server-enterprise-${version}-centos${OS_VERSION}.x86_64.rpm" -y -q
 }
 
 function __install_couchbase_rhel() {
@@ -478,7 +481,17 @@ function __install_couchbase_rhel() {
 }
 
 function __install_couchbase_amazon() {
-    __install_couchbase_centos "$1" "$2"
+    local version=$1
+    local tmp=$2
+    __log_info "Installing Couchbase Server v${version}..."
+    __log_debug "Downloading installer to: ${tmp}"
+    # examples from packages.couchbase.com
+    #https://packages.couchbase.com/releases/7.0.0-beta/couchbase-server-enterprise-7.0.0-beta-amzn2.x86_64.rpm
+    #https://packages.couchbase.com/releases/6.6.2/couchbase-server-enterprise-6.6.2-amzn2.x86_64.rpm
+    wget -O "${tmp}/couchbase-server-enterprise-${version}-amzn2.x86_64.rpm" \
+    "https://packages.couchbase.com/releases/${version}/couchbase-server-enterprise-${version}-amzn2.x86_64.rpm" -q
+    __log_debug "Beginning Installation"
+    yum install "${tmp}/couchbase-server-enterprise-${version}-amzn2.x86_64.rpm" -y -q
 }
 
 function __install_couchbase_ubuntu() {
@@ -533,8 +546,8 @@ function __install_couchbase() {
         __install_syncgateway "$version" "$tmp" "$os"
         return 0
     fi
-    echo "Installing Couchbase"
-        if [[ "$os" == "CENTOS" ]]; then
+    __log_debug "Installing Couchbase on $os"
+    if [[ "$os" == "CENTOS" ]]; then
         version=$(__findClosestVersion "$1" "${CENTOS_SUPPORTED_VERSIONS[@]}")
         __install_couchbase_centos "$version" "$tmp"
     elif [[ "$os" == "DEBIAN" ]]; then
