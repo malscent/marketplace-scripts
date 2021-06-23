@@ -233,7 +233,7 @@ PUBLIC_HOSTNAME=""
 if [[ "$OS" == "AMAZON" ]]; then
   LOCAL_IP=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
   HOST=$(hostname) || hostnamectl
-  PUBLIC_HOSTNAME=$(wget -O - http://169.254.169.254/latest/meta-data/public-hostname -q)
+  PUBLIC_HOSTNAME=$(wget -O - http://169.254.169.254/latest/meta-data/public-hostname -q) || PUBLIC_HOSTNAME=$(hostname)
 else
   LOCAL_IP=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
   HOST=$(hostname) || hostnamectl
