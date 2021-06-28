@@ -511,7 +511,7 @@ function __install_couchbase_ubuntu() {
         __log_error "Error updating package repositories"
         sleep 1
     done
-    until apt-get -y install couchbase-server -qq > /dev/null; do
+    until apt-get -y install couchbase-server-community -qq > /dev/null; do
         __log_error "Error while installing ${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb"
         sleep 1
     done
@@ -533,7 +533,7 @@ function __install_couchbase_debian() {
         __log_error "Error updating package repositories"
         sleep 1
     done
-    until apt-get -y install couchbase-server -qq > /dev/null; do
+    until apt-get -y install couchbase-server-community -qq > /dev/null; do
         __log_error "Error while installing ${tmp}/couchbase-server-enterprise_${version}-debian${OS_VERSION}_amd64.deb"
         sleep 1
     done
