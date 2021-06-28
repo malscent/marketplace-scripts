@@ -496,6 +496,7 @@ function __install_couchbase_amazon() {
 }
 
 function __install_couchbase_ubuntu() {
+     wget -O "couchbase-server-community_6.6.0-ubuntu18.04_amd64.deb" "https://packages.couchbase.com/releases/6.6.0/couchbase-server-community_6.6.0-ubuntu18.04_amd64.deb"
     local version=$1
     local tmp=$2
     __log_info "Installing Couchbase Server v${version}..."
@@ -511,10 +512,10 @@ function __install_couchbase_ubuntu() {
         __log_error "Error updating package repositories"
         sleep 1
     done
-    until apt-get -y install couchbase-server-community -qq > /dev/null; do
-        __log_error "Error while installing ${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb"
-        sleep 1
-    done
+    # until apt-get -y install couchbase-server-community -qq > /dev/null; do
+    #     __log_error "Error while installing ${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb"
+    #     sleep 1
+    # done
 }
 
 function __install_couchbase_debian() {
