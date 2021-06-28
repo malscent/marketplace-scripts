@@ -392,7 +392,7 @@ function __install_syncgateway_rhel() {
     __install_syncgateway_centos "$1" "$2"
 }
 function __install_syncgateway_amazon() {
-    __install_syncgateway_centos "$1" "$2"https://packages.couchbase.com/releases/couchbase-sync-gateway/2.8.0/couchbase-sync-gateway-community_2.8.0_x86_64.deb
+    __install_syncgateway_centos "$1" "$2"
 }
 
 function __install_syncgateway_ubuntu() {
@@ -496,7 +496,6 @@ function __install_couchbase_amazon() {
 }
 
 function __install_couchbase_ubuntu() {
-     #https://packages.couchbase.com/releases/6.6.0/couchbase-server-community_6.6.0-ubuntu18.04_amd64.deb
     local version=$1
     local tmp=$2
     __log_info "Installing Couchbase Server v${version}..."
