@@ -166,7 +166,7 @@ function __install_prerequisites() {
 
 
 # https://docs.couchbase.com/server/current/install/thp-disable.html
-function __turnOffTransparentHugepages ()
+turnOffTransparentHugepages ()
 {
     local os=$1
     __log_debug "Disabling Transparent Hugepages"
@@ -222,7 +222,7 @@ esac
     __log_debug "Transparent Hugepages have been disabled."
 }
 
-function __adjustTCPKeepalive ()
+adjustTCPKeepalive ()
 {
 # Azure public IPs have some odd keep alive behaviour
 # A summary is available here https://docs.mongodb.org/ecosystem/platforms/windows-azure/
@@ -238,18 +238,7 @@ function __adjustTCPKeepalive ()
 
 }
 
-function __get_datadisk()
-{
-    local env=$1
-    # AWS is /mnt/datadisk whereas azure and gcp are /datadisk
-    if [[ "$env" == "AWS" ]]; then
-        echo "/mnt/datadisk"
-    else 
-        echo "/datadisk"
-    fi
-}
-
-function __formatDataDisk ()
+formatDataDisk ()
 {
     local os=$1
     local env=$2
@@ -261,17 +250,10 @@ function __formatDataDisk ()
         mkfs -t ext4 ${DEVICE}
         LINE="${DEVICE}\t${MOUNTPOINT}\text4\tdefaults,nofail\t0\t2"
         echo -e ${LINE} >> /etc/fstab
-        cat /etc/fstab
-        __log_debug "Creating mountpoint: $MOUNTPOINT"
         mkdir $MOUNTPOINT
         mount -a
-        __log_debug "Changing ownership of $MOUNTPOINT"
-        chown couchbase $MOUNTPOINT -v
-        __log_debug "Changing group of $MOUNTPOINT"
-        chgrp couchbase $MOUNTPOINT -v
-        __log_debug "Symbolic link logs directory to data disk"
-        mkdir "$MOUNTPOINT/logs"
-        ln -s "$MOUNTPOINT/logs" /opt/couchbase/var/lib/couchbase/logs
+        chown couchbase $MOUNTPOINT
+        chgrp couchbase $MOUNTPOINT
     fi
 
     if [[ "$env" == "AZURE" && "$sync_gateway" -eq "0" ]]; then
@@ -312,7 +294,7 @@ function __formatDataDisk ()
     fi
 }
 
-function __setSwappiness()
+setSwappiness()
 {
     KERNEL_VERSION=$(uname -r)
     RET=$(__compareVersions "$KERNEL_VERSION" "3.5.0")
@@ -353,15 +335,15 @@ function __amazon_environment() {
 }
 
 function __configure_environment() {
-    __log_debug "Setting up Environment"
+    echo "Setting up Environment"
     local env=$1
     local os=$2
     local sync_gateway=$3
     __log_debug "Setting up for environment: ${env}"
-    __turnOffTransparentHugepages "$os" "$env" "$sync_gateway"
-    __setSwappiness "$os" "$env" "$sync_gateway"
-    __adjustTCPKeepalive "$os" "$env" "$sync_gateway"
-    __formatDataDisk "$os" "$env" "$sync_gateway"
+    turnOffTransparentHugepages "$os" "$env" "$sync_gateway"
+    setSwappiness "$os" "$env" "$sync_gateway"
+    adjustTCPKeepalive "$os" "$env" "$sync_gateway"
+    formatDataDisk "$os" "$env" "$sync_gateway"
     if [[ "$os" == "CENTOS" ]]; then
         __centos_environment "$env" "$sync_gateway"
     elif [[ "$os" == "DEBIAN" ]]; then
@@ -396,15 +378,15 @@ function __install_syncgateway_amazon() {
 }
 
 function __install_syncgateway_ubuntu() {
-    #https://packages.couchbase.com/releases/couchbase-sync-gateway/2.8.0/couchbase-sync-gateway-community_2.8.0_x86_64.deb
+    #https://packages.couchbase.com/releases/7.0.0-beta/couchbase-server-community_7.0.0-beta-ubuntu18.04_amd64.deb
     local version=$1
     local tmp=$2
-    __log_info "Installing Couchbase Sync Gateway community Edition v${version}"
+    __log_info "Installing Couchbase Sync Gateway Enterprise Edition v${version}"
     __log_debug "Downloading installer to: ${tmp}"
-    wget -O "${tmp}/couchbase-sync-gateway-community_${version}_x86_64.deb" "https://packages.couchbase.com/releases/couchbase-sync-gateway/${version}/couchbase-sync-gateway-community_${version}_x86_64.deb" --quiet
+    wget -O "${tmp}/couchbase-sync-gateway-enterprise_${version}_x86_64.deb" "https://packages.couchbase.com/releases/couchbase-sync-gateway/${version}/couchbase-sync-gateway-enterprise_${version}_x86_64.deb" --quiet
     __log_debug "Download complete. Beginning Unpacking"
-    if ! dpkg -i "${tmp}/couchbase-sync-gateway-community_${version}_x86_64.deb" > /dev/null ; then
-        __log_error "Error while installing ${tmp}/couchbase-sync-gateway-community_${version}_x86_64.deb"
+    if ! dpkg -i "${tmp}/couchbase-sync-gateway-enterprise_${version}_x86_64.deb" > /dev/null ; then
+        __log_error "Error while installing ${tmp}/couchbase-sync-gateway-enterprise_${version}_x86_64.deb"
         exit 1
     fi
 }
@@ -467,14 +449,11 @@ function __install_couchbase_centos() {
     local tmp=$2
     __log_info "Installing Couchbase Server v${version}..."
     __log_debug "Downloading installer to: ${tmp}"
-    # example urls pulled from the couchbase.com website
-    #https://packages.couchbase.com/releases/7.0.0-beta/couchbase-server-enterprise-7.0.0-beta-centos8.x86_64.rpm
-    #https://packages.couchbase.com/releases/6.6.2/couchbase-server-enterprise-6.6.2-centos8.x86_64.rpm
-    #https://packages.couchbase.com/releases/6.6.2/couchbase-server-enterprise-6.6.2-centos7.x86_64.rpm
-    wget -O "${tmp}/couchbase-server-enterprise-${version}-centos${OS_VERSION}.x86_64.rpm" \
-    "https://packages.couchbase.com/releases/${version}/couchbase-server-enterprise-${version}-centos${OS_VERSION}.x86_64.rpm" -q
-    __log_debug "Beginning Installation"
-    yum install "${tmp}/couchbase-server-enterprise-${version}-centos${OS_VERSION}.x86_64.rpm" -y -q
+    wget -O "${tmp}/couchbase-release-1.0-x86_64.rpm" https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-x86_64.rpm -q
+    __log_debug "Download Complete.  Beginning Unpacking"
+    rpm -i "${tmp}/couchbase-release-1.0-x86_64.rpm"
+    __log_debug "Unpacking complete.  Beginning Installation"
+    yum install "couchbase-server-${version}" -y -q
 }
 
 function __install_couchbase_rhel() {
@@ -482,70 +461,31 @@ function __install_couchbase_rhel() {
 }
 
 function __install_couchbase_amazon() {
-    local version=$1
-    local tmp=$2
-    __log_info "Installing Couchbase Server v${version}..."
-    __log_debug "Downloading installer to: ${tmp}"
-    # examples from packages.couchbase.com
-    #https://packages.couchbase.com/releases/7.0.0-beta/couchbase-server-enterprise-7.0.0-beta-amzn2.x86_64.rpm
-    #https://packages.couchbase.com/releases/6.6.2/couchbase-server-enterprise-6.6.2-amzn2.x86_64.rpm
-    wget -O "${tmp}/couchbase-server-enterprise-${version}-amzn2.x86_64.rpm" \
-    "https://packages.couchbase.com/releases/${version}/couchbase-server-enterprise-${version}-amzn2.x86_64.rpm" -q
-    __log_debug "Beginning Installation"
-    yum install "${tmp}/couchbase-server-enterprise-${version}-amzn2.x86_64.rpm" -y -q
+    __install_couchbase_centos "$1" "$2"
 }
 
-# function __install_couchbase_ubuntu() {
-#     local version=$1
-#     local tmp=$2
-#     __log_info "Installing Couchbase Server v${version}..."
-#     __log_debug "Downloading installer to: ${tmp}"
-#     wget -O "${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb" "https://packages.couchbase.com/releases/6.5.1/couchbase-server-community_6.5.1-ubuntu18.04_amd64.deb" -q
-#     __log_debug "Unpacking complete.  Beginning Installation"
-#     until apt-get update -qq > /dev/null; do
-#         __log_error "Error updating package repositories"
-#         sleep 1
-#     done
-#     __log_debug "Download Complete.  Beginning Unpacking"
-#     until    "${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb" > /dev/null; do
-#         __log_error "Error while installing ${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb"
-#         sleep 1
-#     done
-#     __log_debug "Unpacking complete.  Beginning Installation"
-#     until apt-get -f install -qq > /dev/null; do
-#         __log_error "Error updating package repositories"
-#         sleep 1
-#     done
-#     # until apt-get -y install couchbase-server-community -qq > /dev/null; do
-#     #     __log_error "Error while installing ${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb"
-#     #     sleep 1
-#     # done
-# }
-
 function __install_couchbase_ubuntu() {
+#https://packages.couchbase.com/releases/7.0.0-beta/couchbase-server-community_7.0.0-beta-ubuntu18.04_amd64.deb
     local version=$1
     local tmp=$2
     __log_info "Installing Couchbase Server v${version}..."
     __log_debug "Downloading installer to: ${tmp}"
-    wget -O "${tmp}/couchbase-release-1.0-amd64.deb" "https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-amd64.deb" -q
-    until dpkg -i "${tmp}/couchbase-release-1.0-amd64.deb" > /dev/null; do
-        __log_error "Error while installing ${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb"
+    wget -O "${tmp}/couchbase-server-enterprise_${version}-ubuntu${OS_VERSION}_amd64.deb" "https://packages.couchbase.com/releases/7.0.0-beta/couchbase-server-community_7.0.0-beta-ubuntu18.04_amd64.deb" -q
+    __log_debug "Download Complete.  Beginning Unpacking"
+    until dpkg -i "${tmp}/couchbase-server-enterprise_${version}-ubuntu${OS_VERSION}_amd64.deb" > /dev/null; do
+        __log_error "Error while installing ${tmp}/couchbase-server-enterprise_${version}-ubuntu${OS_VERSION}_amd64.deb"
         sleep 1
     done
+    __log_debug "Unpacking complete.  Beginning Installation"
     until apt-get update -qq > /dev/null; do
         __log_error "Error updating package repositories"
         sleep 1
     done
-    until apt-get install couchbase-server-community -qq > /dev/null; do
-        __log_error "Error updating package repositories"
-        sleep 1
-    done
-    until sudo apt-get install couchbase-server-community=6.0.0-1693-1 -qq > /dev/null; do
-        __log_error "Error updating package repositories"
+    until apt-get -y install couchbase-server-community -qq > /dev/null; do
+        __log_error "Error while installing ${tmp}/couchbase-server-enterprise_${version}-ubuntu${OS_VERSION}_amd64.deb"
         sleep 1
     done
 }
-
 
 function __install_couchbase_debian() {
     local version=$1
@@ -563,7 +503,7 @@ function __install_couchbase_debian() {
         __log_error "Error updating package repositories"
         sleep 1
     done
-    until apt-get -y install couchbase-server-community -qq > /dev/null; do
+    until apt-get -y install couchbase-server -qq > /dev/null; do
         __log_error "Error while installing ${tmp}/couchbase-server-enterprise_${version}-debian${OS_VERSION}_amd64.deb"
         sleep 1
     done
@@ -577,8 +517,8 @@ function __install_couchbase() {
         __install_syncgateway "$version" "$tmp" "$os"
         return 0
     fi
-    __log_debug "Installing Couchbase on $os"
-    if [[ "$os" == "CENTOS" ]]; then
+    echo "Installing Couchbase"
+        if [[ "$os" == "CENTOS" ]]; then
         version=$(__findClosestVersion "$1" "${CENTOS_SUPPORTED_VERSIONS[@]}")
         __install_couchbase_centos "$version" "$tmp"
     elif [[ "$os" == "DEBIAN" ]]; then
