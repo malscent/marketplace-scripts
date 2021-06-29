@@ -495,32 +495,57 @@ function __install_couchbase_amazon() {
     yum install "${tmp}/couchbase-server-enterprise-${version}-amzn2.x86_64.rpm" -y -q
 }
 
+# function __install_couchbase_ubuntu() {
+#     local version=$1
+#     local tmp=$2
+#     __log_info "Installing Couchbase Server v${version}..."
+#     __log_debug "Downloading installer to: ${tmp}"
+#     wget -O "${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb" "https://packages.couchbase.com/releases/6.5.1/couchbase-server-community_6.5.1-ubuntu18.04_amd64.deb" -q
+#     __log_debug "Unpacking complete.  Beginning Installation"
+#     until apt-get update -qq > /dev/null; do
+#         __log_error "Error updating package repositories"
+#         sleep 1
+#     done
+#     __log_debug "Download Complete.  Beginning Unpacking"
+#     until    "${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb" > /dev/null; do
+#         __log_error "Error while installing ${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb"
+#         sleep 1
+#     done
+#     __log_debug "Unpacking complete.  Beginning Installation"
+#     until apt-get -f install -qq > /dev/null; do
+#         __log_error "Error updating package repositories"
+#         sleep 1
+#     done
+#     # until apt-get -y install couchbase-server-community -qq > /dev/null; do
+#     #     __log_error "Error while installing ${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb"
+#     #     sleep 1
+#     # done
+# }
+
 function __install_couchbase_ubuntu() {
     local version=$1
     local tmp=$2
     __log_info "Installing Couchbase Server v${version}..."
     __log_debug "Downloading installer to: ${tmp}"
-    wget -O "${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb" "https://packages.couchbase.com/releases/6.6.0/couchbase-server-community_6.6.0-ubuntu18.04_amd64.deb" -q
-    __log_debug "Unpacking complete.  Beginning Installation"
+    wget -O "${tmp}/couchbase-release-1.0-amd64.deb" "https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-amd64.deb" -q
+    until dpkg -i "${tmp}/couchbase-release-1.0-amd64.deb" > /dev/null; do
+        __log_error "Error while installing ${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb"
+        sleep 1
+    done
     until apt-get update -qq > /dev/null; do
         __log_error "Error updating package repositories"
         sleep 1
     done
-    __log_debug "Download Complete.  Beginning Unpacking"
-    until dpkg -i "${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb" > /dev/null; do
-        __log_error "Error while installing ${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb"
-        sleep 1
-    done
-    __log_debug "Unpacking complete.  Beginning Installation"
-    until apt-get -f install -qq > /dev/null; do
+    until apt-get install couchbase-server-community -qq > /dev/null; do
         __log_error "Error updating package repositories"
         sleep 1
     done
-    # until apt-get -y install couchbase-server-community -qq > /dev/null; do
-    #     __log_error "Error while installing ${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb"
-    #     sleep 1
-    # done
+    until sudo apt-get install couchbase-server-community=6.0.0-1693-1 -qq > /dev/null; do
+        __log_error "Error updating package repositories"
+        sleep 1
+    done
 }
+
 
 function __install_couchbase_debian() {
     local version=$1
