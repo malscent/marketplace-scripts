@@ -325,7 +325,6 @@ then
     --cluster="$CLUSTER_HOST" \
     --cluster-ramsize="$DATA_QUOTA" \
     --cluster-index-ramsize="$INDEX_QUOTA" \
-    --cluster-fts-ramsize="$SEARCH_QUOTA" \
     --cluster-username="$CB_USERNAME" \
     --cluster-password="$CB_PASSWORD" \
     --services="$SERVICES") || __log_error "Error during Cluster Initialization"
