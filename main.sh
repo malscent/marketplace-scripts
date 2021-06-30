@@ -139,6 +139,10 @@ case $key in
       NO_CLUSTER=1
       shift
     ;;
+    -co|--cluster-only)
+      CLUSTER_ONLY=1
+      shift
+    ;;
     -sv|--services)
       if [ -n "$2" ] && [ "${2:0:1}" != "-" ] && __allExists "$2" "${DEFAULT_SERVICES[@]}" ; then
         SERVICES=$2
@@ -228,6 +232,7 @@ fi
 #installing prerequisites from installer
 __install_prerequisites "$OS" "$ENV" "$SYNC_GATEWAY"
 
+
 PUBLIC_HOSTNAME=""
 #Getting information to determine whether this is the cluster host or not.
 if [[ "$OS" == "AMAZON" ]]; then
@@ -263,13 +268,12 @@ if [[ "$CB_USERNAME" == "$DEFAULT_USERNAME" ]] && [[ "$CB_PASSWORD" == "$DEFAULT
 fi
 
 
+if [[ "$CLUSTER_ONLY" == "0" ]]; then
+  tmp_dir=$(mktemp -d)
+  __log_info "Temp directory will be ${tmp_dir}"
 
-tmp_dir=$(mktemp -d)
-__log_info "Temp directory will be ${tmp_dir}"
-
-
-__install_couchbase "$VERSION" "${tmp_dir}" "$OS" "$SYNC_GATEWAY"
-
+  __install_couchbase "$VERSION" "${tmp_dir}" "$OS" "$SYNC_GATEWAY"
+fi
 
 __log_debug "Adding an entry to /etc/hosts to simulate split brain DNS..."
 echo "
@@ -280,7 +284,6 @@ echo "
 __log_debug "Performing Post Installation Configuration"
 __configure_environment "$ENV" "$OS" "$SYNC_GATEWAY"
 __log_debug "Completed Post Installation Configuration"
-
 
 if [[ "$SYNC_GATEWAY" == 0 ]]; then
 

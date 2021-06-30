@@ -136,9 +136,15 @@ This project uses [BATS](https://bats-core.readthedocs.io/en/latest/) for unit t
 
 ### ```-h|--help```
 
-**Usage**: ```./main.sh -```
+**Usage**: ```./main.sh -h```
 
 **Purpose**:  Prints help regarding the parameters to pass to this script
+
+### ```-co|--cluster-only```
+
+**Usage**: ```./main.sh --cluster-only```
+
+**Purpose**: This is for situations where an existing couchbase server needs added to an existing couchbase cluster, but the instllation does not need to be performed
 
 ## Build Containers for test
 
