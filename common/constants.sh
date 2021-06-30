@@ -16,7 +16,11 @@ export DAEMON=0
 export STARTUP=0
 export SYNC_GATEWAY=0
 export WAIT=0
+# Performs installation of couchbase server, but does not attempt to add the server to an existing cluster
 export NO_CLUSTER=0
+# Skips the installation and only performs the addition of a couchbase server to an existing cluster
+export CLUSTER_ONLY=0
+# Internal variable for determining whether to perform clustering or not
 export DO_CLUSTER=0
 export readonly DEFAULT_SERVICES=("data" "index" "analytics" "eventing" "fts" "query")
 export SERVICES="${DEFAULT_SERVICES[*]}"
