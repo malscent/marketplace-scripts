@@ -312,8 +312,6 @@ if [[ "$SYNC_GATEWAY" == 0 ]]; then
     --node-init-hostname="${LOCAL_IP}" \
     --node-init-data-path="${DISK_PATH}/data" \
     --node-init-index-path="${DISK_PATH}/index" \
-    --node-init-analytics-path="${DISK_PATH}/data" \
-    --node-init-eventing-path="${DISK_PATH}/data" \
     --username="$CB_USERNAME" \
     --password="$CB_PASSWORD") || __log_error "Error during Node Initialization"
   __log_debug "node-init result: \'$resval\'"
@@ -328,8 +326,6 @@ then
     --cluster-ramsize="$DATA_QUOTA" \
     --cluster-index-ramsize="$INDEX_QUOTA" \
     --cluster-fts-ramsize="$SEARCH_QUOTA" \
-    --cluster-eventing-ramsize="$EVENTING_QUOTA" \
-    --cluster-analytics-ramsize="$ANALYTICS_QUOTA" \
     --cluster-username="$CB_USERNAME" \
     --cluster-password="$CB_PASSWORD" \
     --services="$SERVICES") || __log_error "Error during Cluster Initialization"
