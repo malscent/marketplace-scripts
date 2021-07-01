@@ -232,8 +232,8 @@ if [[ "$STARTUP" == "1" ]]; then
       exit;
     fi
     # try to get the cluster membership and if it is active, we don't need to do anything, even if we are cluster only
-    CLUSTER_MEMBERSHIP=$(/opt/couchbase/bin/couchbase-cli server-info --cluster 127.0.0.1:8091 --username "${CB_USERNAME}" --password "${CB_PASSWORD}" | jq -r '.clusterMembership')
-    if [[ "$CLUSTER_MEMBERSHIP" == "active" ]]; then
+    CLUSTER_MEMBERSHIP=$(wget --http-user="$CB_USERNAME" --http-password="$CB_PASSWORD" -O - http://127.0.0.1:8091/pools/default -q | jq -r '') || CLUSTER_MEMBERSHIP="unknown pool"
+    if [[ "$CLUSTER_MEMBERSHIP" != "unknown pool" ]]; then
       __log_info "Couchbase is already installed and part of a membership.  Exiting"
       exit;
     fi
