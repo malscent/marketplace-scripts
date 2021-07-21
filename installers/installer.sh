@@ -396,13 +396,14 @@ function __install_syncgateway_amazon() {
 }
 
 function __install_syncgateway_ubuntu() {
+    #https://packages.couchbase.com/releases/couchbase-sync-gateway/2.8.2/couchbase-sync-gateway-community_2.8.2_x86_64.deb
     local version=$1
     local tmp=$2
     __log_info "Installing Couchbase Sync Gateway Enterprise Edition v${version}"
     __log_debug "Downloading installer to: ${tmp}"
-    wget -O "${tmp}/couchbase-sync-gateway-enterprise_${version}_x86_64.deb" "https://packages.couchbase.com/releases/couchbase-sync-gateway/${version}/couchbase-sync-gateway-enterprise_${version}_x86_64.deb" --quiet
+    wget -O "${tmp}/couchbase-sync-gateway-community_${version}_x86_64.deb" "https://packages.couchbase.com/releases/couchbase-sync-gateway/${version}/couchbase-sync-gateway-community_${version}_x86_64.deb" --quiet
     __log_debug "Download complete. Beginning Unpacking"
-    if ! dpkg -i "${tmp}/couchbase-sync-gateway-enterprise_${version}_x86_64.deb" > /dev/null ; then
+    if ! dpkg -i "${tmp}/couchbase-sync-gateway-community_${version}_x86_64.deb" > /dev/null ; then
         __log_error "Error while installing ${tmp}/couchbase-sync-gateway-enterprise_${version}_x86_64.deb"
         exit 1
     fi
@@ -495,13 +496,14 @@ function __install_couchbase_amazon() {
 }
 
 function __install_couchbase_ubuntu() {
+    #https://packages.couchbase.com/releases/6.6.0/couchbase-server-community_6.6.0-ubuntu18.04_amd64.deb
     local version=$1
     local tmp=$2
     __log_info "Installing Couchbase Server v${version}..."
     __log_debug "Downloading installer to: ${tmp}"
-    wget -O "${tmp}/couchbase-server-enterprise_${version}-ubuntu${OS_VERSION}_amd64.deb" "http://packages.couchbase.com/releases/${version}/couchbase-server-enterprise_${version}-ubuntu${OS_VERSION}_amd64.deb" -q
+    wget -O "${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb" "http://packages.couchbase.com/releases/${version}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb" -q
     __log_debug "Download Complete.  Beginning Unpacking"
-    until dpkg -i "${tmp}/couchbase-server-enterprise_${version}-ubuntu${OS_VERSION}_amd64.deb" > /dev/null; do
+    until dpkg -i "${tmp}/couchbase-server-community_${version}-ubuntu${OS_VERSION}_amd64.deb" > /dev/null; do
         __log_error "Error while installing ${tmp}/couchbase-server-enterprise_${version}-ubuntu${OS_VERSION}_amd64.deb"
         sleep 1
     done
@@ -510,7 +512,7 @@ function __install_couchbase_ubuntu() {
         __log_error "Error updating package repositories"
         sleep 1
     done
-    until apt-get -y install couchbase-server -qq > /dev/null; do
+    until apt-get -y install couchbase-server-community -qq > /dev/null; do
         __log_error "Error while installing ${tmp}/couchbase-server-enterprise_${version}-ubuntu${OS_VERSION}_amd64.deb"
         sleep 1
     done
